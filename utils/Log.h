@@ -18,7 +18,7 @@
 
 namespace logger
 {
-    bool is_closed = true;
+    bool is_closed = false;
 
     void print(string s)
     {

@@ -9,7 +9,7 @@
 #include "z.H"
 #include <assert.h>
 #include <math.h>
-
+#include <iostream>
 __uint128_t compute_Z_value(long long x[], const size_t &x_len, const long long &bits)
 {
 	assert(bits > 0);
@@ -29,21 +29,14 @@ __uint128_t compute_Z_value(long long x[], const size_t &x_len, const long long 
 	return z;
 }
 
-long compute_Z_value(long x, long y, int bit_num)
+long long compute_Z_value(long long x, long long y, int bit_num)
 {
-	long result = 0;
+	long long result = 0;
+	long seed = 1;
 	for (int i = 0; i < bit_num; i++)
 	{
-		// long seed = (long) pow(2, i);
-		long seed = 1 << i;
-
-		long temp = seed & x;
-		temp = temp << i;
-		result += temp;
-
-		temp = seed & y;
-		temp = temp << (i + 1);
-		result += temp;
+		result += (((seed & y) << 1) + (seed & x)) << i;
+		seed = seed << 1;
 	}
 	return result;
 }

@@ -15,6 +15,7 @@
 #include "entities/Query.h"
 #include "entities/DataSet.h"
 #include "utils/FileReader.h"
+#include "utils/FileWriter.h"
 #include "utils/SortTools.h"
 #include "curves/z.H"
 
@@ -90,14 +91,12 @@ vector<long> generate_keys(vector<Point> points)
 
 int main(int argc, char **argv)
 {
-    // TODO MR!!
-    // TODO test six methods
-    // TODO test 2 level ZM
-    // TODO add query methods
-    string dataset_name = "/home/research/datasets/skewed_2000000_4_2_.csv";
+    // string dataset_name = "/home/research/datasets/skewed_2000000_4_2_.csv";
+    string dataset_name = "/home/research/datasets/OSM_100000000_1_2_.csv";
     zm::init(dataset_name);
-    zm::build_ZM();
-    zm::query();
+    // zm::build_ZM();
+    // zm::query();
+    // zm::generate_points();
 }
 
 #endif // use_gpu

@@ -3,6 +3,7 @@
 #include <vector>
 #include <string.h>
 #include <string>
+#include <math.h>
 
 class Point
 {
@@ -14,6 +15,7 @@ public:
     float label;
     int index = 0;
     float normalized_key;
+    double temp_dist;
 
     Point()
     {
@@ -36,6 +38,12 @@ public:
             return true;
         }
         return false;
+    }
+
+    double cal_dist(Point point)
+    {
+        temp_dist = sqrt(pow((point.x - x), 2) + pow((point.y - y), 2));
+        return temp_dist;
     }
 
     // string get_self()

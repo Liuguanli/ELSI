@@ -48,7 +48,34 @@ using namespace std;
 //     return temp;
 // }
 
+struct sort_for_kNN
+{
+    Point queryPoint;
+    sort_for_kNN(Point &point)
+    {
+        queryPoint = point;
+    }
+    bool operator()(Point point1, Point point2)
+    {
+        return (point1.cal_dist(queryPoint) < point2.cal_dist(queryPoint));
+    }
+};
 
+struct sortForKNN1
+{
+    bool operator()(Point point1, Point point2)
+    {
+        return point1.temp_dist < point2.temp_dist;
+    }
+};
+
+struct sortForKNN2
+{
+    bool operator()(Point point1, Point point2)
+    {
+        return point1.temp_dist < point2.temp_dist;
+    }
+};
 
 
 struct sortX

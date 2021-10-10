@@ -20,7 +20,7 @@ namespace config
 {
     float sampling_rate = 0.1;
     int bit_num = 8;
-    int rs_m = 100;
+    int rs_m = 10000;
     int cluster_k = 100;
 
     float lambda = 0.8;
