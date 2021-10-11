@@ -54,6 +54,7 @@ public:
         string s = ss.str();
         // s = s.substr(0, s.length() - 1);
         return s + to_string(is_rebuild ? 1 : 0);
-    };
+    }
+};
 
 #endif

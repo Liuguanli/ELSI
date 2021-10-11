@@ -35,6 +35,8 @@
 
 #include "entities/Statistics.h"
 #include "entities/ScorerItem.h"
+#include "entities/ExtraStorageBlock.h"
+
 using namespace logger;
 using namespace config;
 template <typename D, typename T>
@@ -51,7 +53,13 @@ public:
     void (*init_storage_p)(DataSet<D, T>);
     vector<D> (*window_query_p)(Query<D>);
     vector<D> (*knn_query_p)(Query<D>);
+    void (*insert_p)(D);
     map<int, vector<float>> methods;
+
+    long max_cardinality = 10000000;
+
+    // vector<ExtraStorageBlock<D>> extra_storage;
+    vector<D> extra_storage;
 
     void config_method_pool(string index_name)
     {
@@ -76,34 +84,28 @@ public:
         status = Constants::STATUS_FRAMEWORK_INIT_DONE;
     }
 
-    int build_predict_method(float lambda, DataSet<D, T> &original_data_set)
+    int build_predict_method(float lambda, float query_frequency, DataSet<D, T> &original_data_set)
     {
-        // if (status < Constants::STATUS_FRAMEWORK_INIT_DONE)
-        // {
-        //     return Constants::OG;
-        // }
-
         int method_pool_size = methods.size();
-
         DataSetInfo<T> info(Constants::DEFAULT_BIN_NUM, original_data_set.keys);
         float *build_score = new float[method_pool_size];
         float *query_score = new float[method_pool_size];
         float max = numeric_limits<float>::min();
         int max_index = 0;
-        vector<float> distribution_list = info.get_distribution();
+        float distribution = info.get_distribution();
         vector<float> parameters;
-        parameters.push_back((float)original_data_set.keys.size() / Constants::MAX_CARDINALITY);
-        parameters.insert(parameters.end(), distribution_list.begin(), distribution_list.end());
+        parameters.push_back((float)original_data_set.keys.size() / max_cardinality);
+        parameters.push_back(distribution);
         for (size_t i = 0; i < method_pool_size; i++)
         {
             vector<float> temp = parameters;
             temp.insert(temp.end(), methods[i].begin(), methods[i].end());
 #ifdef use_gpu
-            torch::Tensor x = torch::tensor(temp, at::kCUDA).reshape({1, 10});
+            torch::Tensor x = torch::tensor(temp, at::kCUDA).reshape({1, 8});
             build_cost_model->to(torch::kCUDA);
             query_cost_model->to(torch::kCUDA);
 #else
-            torch::Tensor x = torch::tensor(temp).reshape({1, 10});
+            torch::Tensor x = torch::tensor(temp).reshape({1, 8});
 #endif
             build_score[i] = build_cost_model->predict(x).item().toFloat();
             query_score[i] = query_cost_model->predict(x).item().toFloat();
@@ -204,6 +206,22 @@ public:
         {
             point_query_p(query);
         }
+        if (extra_storage.size() > 0)
+        {
+            Point query_point;
+            // for (size_t i = 0; i < extra_storage.size(); i++)
+            // {
+            //     vector<Point>::iterator iter = find(extra_storage[i].children.begin(), extra_storage[i].children.end(), query_point);
+            //     if (iter != extra_storage[i].children.end())
+            //     {
+            //         break;
+            //     }
+            // }
+            vector<Point>::iterator iter = find(extra_storage.begin(), extra_storage.end(), query_point);
+            if (iter != extra_storage.end())
+            {
+            }
+        }
     }
 
     void window_query(Query<D> query)
@@ -222,17 +240,49 @@ public:
         }
     }
 
+    void insert(D point)
+    {
+        if (insert_p == NULL)
+        {
+            // if (extra_storage[extra_storage.size() - 1].is_full())
+            // {
+            //     ExtraStorageBlock<D> new_block;
+            //     new_block.add_point(point);
+            //     extra_storage.push_back(new_block);
+            // }
+            // else
+            // {
+            //     extra_storage[extra_storage.size() - 1].add_point(point);
+            // }
+            extra_storage.push_back(point);
+        }
+        else
+        {
+            insert_p(point);
+        }
+    }
+
     bool is_rebuild()
     {
         status = 11;
+        //                     parameters.push_back(cardinality);
+        //                     parameters.push_back(cdf_change);
+        //                     parameters.push_back(relative_depth);
+        //                     parameters.push_back(update_ratio);
+        //                     parameters.insert(parameters.end(), distribution_list.begin(), distribution_list.end());
 
+        // #ifdef use_gpu
+        //                     torch::Tensor x = torch::tensor(temp, at::kCUDA).reshape({1, 7});
+        //                     rebuild_model->to(torch::kCUDA);
+        // #else
+        //                     torch::Tensor x = torch::tensor(temp).reshape({1, 7});
+        // #endif
+        //                     bool is_rebuild = rebuild_model->predict(x).item().toFloat() >= 0.5;
         status = 12;
         return false;
     }
 
 private:
-    vector<D> extra_storage;
-
     vector<string> split(const string &str, const string &pattern)
     {
         vector<string> res;
@@ -277,7 +327,6 @@ private:
             DIR *dir;
             dir = opendir(ppath.c_str());
             vector<ScorerItem> records;
-            long max_cardinality = 10000000;
             long shortest_build_time = numeric_limits<long>::max();
             long shortest_query_time = numeric_limits<long>::max();
             while ((ptr = readdir(dir)) != NULL)
@@ -288,32 +337,26 @@ private:
                 int find_result = path.find(".csv");
                 if (find_result > 0 && find_result <= path.length())
                 {
-                    cout << ppath + path << endl;
+                    print(ppath + path);
                     string prefix = path.substr(0, path.find(".csv"));
                     vector<string> sub_string = split(prefix, "_");
                     DataSet<D, T> dataset;
                     dataset.dataset_name = ppath + path;
-                    cout << "read_data" << endl;
 
                     dataset.read_data();
                     dataset.mapping();
-                    cout << "init_storage_p" << endl;
                     init_storage_p(dataset);
 
                     for (std::map<int, vector<float>>::iterator iter = methods.begin(); iter != methods.end(); ++iter)
                     {
                         int method = iter->first;
                         ScorerItem item(stof(sub_string[0]), stof(sub_string[1]), iter->second);
-                        // TODO record time
-                        cout << "build:" << method << endl;
                         auto start = chrono::high_resolution_clock::now();
                         build_index_p(dataset, method);
                         auto finish = chrono::high_resolution_clock::now();
                         long build_time = chrono::duration_cast<chrono::nanoseconds>(finish - start).count();
                         Query<D> point_query;
                         point_query.set_point_query()->set_query_points(dataset.points);
-                        // TODO record time
-                        cout << "query" << endl;
                         start = chrono::high_resolution_clock::now();
                         point_query_p(point_query);
                         finish = chrono::high_resolution_clock::now();
@@ -344,7 +387,6 @@ private:
                 parameters.insert(parameters.end(), records[i].method.begin(), records[i].method.end());
                 build_time_labels.push_back(records[i].build_time);
                 query_time_labels.push_back(records[i].query_time);
-                // cout << records[i].get_ScorerItem() << endl;
             }
 
             FileWriter writer;
@@ -361,33 +403,128 @@ private:
             torch::save(query_cost_model, query_time_model_path);
             // learn
 
-            print("init_build_processor-->train models finish");
             status = Constants::STATUS_FRAMEWORK_INIT_BUILD_PROCESSOR_TRAIN_DONE;
         }
     }
 
     void init_rebuild_processor()
     {
-        status = Constants::STATUS_FRAMEWORK_INIT_REBUILD_PROCESSOR;
+//         status = Constants::STATUS_FRAMEWORK_INIT_REBUILD_PROCESSOR;
 
-        print("   init rebuild models");
-        string path = "/home/liuguanli/Dropbox/shared/VLDB20/codes/rsmi/rebuild_model/train_set_formatted.csv";
-        string rebuild_model_path = "/home/liuguanli/Dropbox/shared/VLDB20/codes/rsmi/rebuild_model/rebuild_model.pt";
-        std::ifstream fin_rebuild(rebuild_model_path);
-        if (fin_rebuild)
-        {
-            torch::load(rebuild_model, rebuild_model_path);
-            print("    init_rebuild_processor-->load model finish");
-            status = Constants::STATUS_FRAMEWORK_INIT_REBUILD_PROCESSOR_LOAD_DONE;
-        }
-        else
-        {
-            rebuild::generate_updates_data_set();
-            rebuild::build_simple_models_and_updates();
-            rebuild::generate_training_set();
-            rebuild::learn_rebuild_model();
-            status = Constants::STATUS_FRAMEWORK_INIT_REBUILD_PROCESSOR_TRAIN_DONE;
-        }
+//         print("   init rebuild models");
+
+//         string raw_data_path = "./data/rebuild_raw_data.csv";
+
+//         string path = "./data/rebuild_set_formatted.csv";
+//         string rebuild_model_path = "./data/rebuild_model.pt";
+//         std::ifstream fin_rebuild(rebuild_model_path);
+//         if (fin_rebuild)
+//         {
+//             torch::load(rebuild_model, rebuild_model_path);
+//             print("    init_rebuild_processor-->load model finish");
+//             status = Constants::STATUS_FRAMEWORK_INIT_REBUILD_PROCESSOR_LOAD_DONE;
+//         }
+//         else
+//         {
+//             string ppath = "/home/research/datasets/BASE/synthetic/";
+//             struct dirent *ptr;
+//             DIR *dir;
+//             dir = opendir(ppath.c_str());
+//             vector<Statistics> records;
+//             while ((ptr = readdir(dir)) != NULL)
+//             {
+//                 if (ptr->d_name[0] == '.')
+//                     continue;
+//                 string path = ptr->d_name;
+//                 int find_result = path.find(".csv");
+//                 if (find_result > 0 && find_result <= path.length())
+//                 {
+//                     string prefix = path.substr(0, path.find(".csv"));
+//                     vector<string> sub_string = split(prefix, "_");
+//                     // only consider the maximal data sets
+//                     if (stol(sub_string[0]) != max_cardinality)
+//                     {
+//                         continue;
+//                     }
+//                     print(ppath + path);
+
+//                     DataSet<D, T> dataset;
+//                     dataset.dataset_name = ppath + path;
+//                     dataset.read_data();
+//                     dataset.mapping();
+//                     init_storage_p(dataset);
+
+//                     DataSetInfo<T> original_info(Constants::DEFAULT_BIN_NUM, dataset.keys);
+//                     DataSetInfo<T> current_info(Constants::DEFAULT_BIN_NUM, dataset.keys);
+
+//                     // TODO generate synthetic points
+//                     int count = 0;
+//                     for (size_t i = 0; i < count; i++)
+//                     {
+//                         vector<Point> inserted_points;
+//                         Statistics statistics;
+//                         statistics.cardinality = dataset.points.size() / max_cardinality;
+//                         statistics.relative_depth = 1.0;
+
+//                         build_index_p(dataset, Constants::OG);
+
+//                         auto start = chrono::high_resolution_clock::now();
+//                         point_query_p(point_query);
+//                         auto finish = chrono::high_resolution_clock::now();
+
+//                         long before_insert_query_time = chrono::duration_cast<chrono::nanoseconds>(finish - start).count() / dataset.points.size();
+
+//                         // TODO implement insert
+//                         for (Point point : inserted_points)
+//                         {
+//                             insert(point);
+//                             statistics.insert();
+//                         }
+//                         // TODO update current_info
+//                         current_info.update();
+//                         statistics.cdf_change = original_info.cal_dist(current_info.cdf);
+//                         statistics.relative_depth = 1.0;
+//                         statistics.update_ratio = (float)(statistics.inserted + statistics.deleted) / dataset.points.size();
+//                         statistics.distribution = current_info.get_distribution();
+
+//                         start = chrono::high_resolution_clock::now();
+//                         point_query_p(point_query);
+//                         finish = chrono::high_resolution_clock::now();
+//                         long after_insert_query_time = chrono::duration_cast<chrono::nanoseconds>(finish - start).count() / dataset.points.size();
+
+//                         records.push_back(statistics);
+//                     }
+//                 }
+//             }
+
+//             // TODO setup extra storage and query methods.!
+//             vector<float> parameters;
+//             vector<float> labels;
+
+//             for (size_t i = 0; i < records.size(); i++)
+//             {
+//                 vector<float> temp = records[i].get_input();
+//                 parameters.insert(parameters.end(), temp.begin(), temp.end());
+//                 labels.push_back(records[i].is_rebuild ? 1 : 0);
+//             }
+
+//             FileWriter writer;
+//             writer.write_statistics_items(records, raw_data_path);
+
+//             // save
+// #ifdef use_gpu
+//             rebuild_model->to(torch::kCUDA);
+// #endif
+//             rebuild_model->train_model(parameters, labels);
+//             torch::save(rebuild_model, rebuild_model_path);
+//         }
+//         // TODO finish RL
+//         // rebuild::generate_updates_data_set();
+//         // rebuild::build_simple_models_and_updates();
+//         // rebuild::generate_training_set();
+//         // rebuild::learn_rebuild_model();
+//         status = Constants::STATUS_FRAMEWORK_INIT_REBUILD_PROCESSOR_TRAIN_DONE;
+//         // }
     }
 };
 

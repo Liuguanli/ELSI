@@ -25,25 +25,6 @@
 using namespace std;
 using namespace zm;
 
-void index_ability()
-{
-}
-
-void method_pool()
-{
-}
-
-void method_selection()
-{
-}
-
-void data_preparation(vector<Point> &points)
-{
-}
-
-void read_config(string path)
-{
-}
 
 vector<Point> read_data(string filename, string delimeter, double &min_x, double &min_y, double &max_x, double &max_y)
 {
@@ -93,7 +74,7 @@ int main(int argc, char **argv)
 {
     // string dataset_name = "/home/research/datasets/skewed_2000000_4_2_.csv";
     string dataset_name = "/home/research/datasets/OSM_100000000_1_2_.csv";
-    zm::init(dataset_name);
+    // zm::init(dataset_name);
     // zm::build_ZM();
     // zm::query();
     // zm::generate_points();

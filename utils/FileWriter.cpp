@@ -18,10 +18,23 @@ FileWriter::FileWriter(string filename)
     file_utils::check_dir(filename);
 }
 
+void FileWriter::write_statistics_items(vector<Statistics> items, string file_name)
+{
+    ofstream write;
+    // file_utils::check_dir(filename);
+    write.open(file_name, ios::out);
+    int N = items.size();
+    for (size_t i = 0; i < N; i++)
+    {
+        write << items[i].get_Statistics() << endl;
+    }
+    write.close();
+}
+
 void FileWriter::write_score_items(vector<ScorerItem> items, string file_name)
 {
     ofstream write;
-    file_utils::check_dir(filename);
+    // file_utils::check_dir(file_name);
     write.open(file_name, ios::out);
     int N = items.size();
     for (size_t i = 0; i < N; i++)

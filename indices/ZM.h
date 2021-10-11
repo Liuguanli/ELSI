@@ -41,6 +41,8 @@ namespace zm
     int page_size = Constants::PAGESIZE;
     int error_shift = 0;
     long long first_key, last_key, gap;
+    int cardinality_l = 10000;
+    int cardinality_u = 10000000;
 
     vector<Point> read_data(string filename, string delimeter, double &min_x, double &min_y, double &max_x, double &max_y)
     {
@@ -288,10 +290,8 @@ namespace zm
         return result;
     }
 
-    vector<Point> knn_query(Query<Point> query)
+    void insert(Point point)
     {
-        vector<Point> res;
-        return res;
     }
 
     void build_single_ZM(DataSet<Point, long long> dataset, int method)
@@ -328,9 +328,11 @@ namespace zm
 
         framework.point_query_p = point_query;
         framework.window_query_p = window_query;
-        framework.knn_query_p = knn_query;
+        framework.knn_query_p = kNN_query;
         framework.build_index_p = build_single_ZM;
         framework.init_storage_p = init_underlying_data_storage;
+        framework.insert_p = insert;
+        framework.max_cardinality = cardinality_u;
 
         DataSet<Point, long long>::read_data_pointer = read_data;
         DataSet<Point, long long>::mapping_pointer = mapping;
@@ -384,7 +386,7 @@ namespace zm
                 // TODO change records[i][j] to Dataset
                 // std::shared_ptr<MLP> mlp = framework.build(config::lambda, records[i][j]);
                 DataSet<Point, long long> original_data_set(records[i][j]);
-                int method = framework.build_predict_method(lambda, original_data_set);
+                int method = framework.build_predict_method(lambda, query_frequency, original_data_set);
                 std::shared_ptr<MLP> mlp = framework.build_with_method(original_data_set, method);
 
                 temp_index.push_back(mlp);
@@ -440,8 +442,6 @@ namespace zm
     void generate_points()
     {
         print("generate_points");
-        int cardinality_l = 10000;
-        int cardinality_u = 10000000;
 
         int bin_num_synthetic = 10;
 

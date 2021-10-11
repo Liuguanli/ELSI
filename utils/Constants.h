@@ -22,10 +22,6 @@ public:
     static const int STATUS_FRAMEWORK_BEGIN_QUERY = 10;
     static const int STATUS_FRAMEWORK_BEGIN_QUERY_DONE = 11;
 
-    
-
-
-    static const int MAX_CARDINALITY = 64000000;
     static const int DEFAULT_BIN_NUM = 100;
     static const int CLUSTER_K = 100;
 

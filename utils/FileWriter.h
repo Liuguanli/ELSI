@@ -8,6 +8,7 @@
 #include "../entities/Point.h"
 #include "../entities/Mbr.h"
 #include "../entities/ScorerItem.h"
+#include "../entities/Statistics.h"
 // #include <boost/algorithm/Mbr.hpp>
 using namespace std;
 class FileWriter
@@ -19,6 +20,7 @@ public:
     FileWriter();
 
     void write_score_items(vector<ScorerItem> items, string file_name);
+    void write_statistics_items(vector<Statistics> items, string file_name);
 
     void write_Approximate_SFC(vector<float>, vector<float>, string);
     void write_weighted_SFC(vector<float>, string);
