@@ -27,10 +27,7 @@ private:
 public:
     vector<float> hist;
     vector<float> cdf;
-
-    DataSetInfo()
-    {
-    }
+    vector<float> uniform_cdf;
 
     DataSetInfo(int bin_num, vector<T> &data)
     {
@@ -52,9 +49,12 @@ public:
             }
             hist.push_back(inner_index * 1.0 / N);
             cdf.push_back(cdf_index * 1.0 / N);
+
+            uniform_cdf.push_back((float)i / bin_num);
         }
         hist.push_back(1 - cdf_index * 1.0 / N);
         cdf.push_back(1.0);
+        uniform_cdf.push_back(1.0);
     }
 
     void update(T value)
@@ -93,34 +93,10 @@ public:
         return 1 - cal_dist(source_cdf);
     }
 
-    vector<float> get_distribution()
+    float get_distribution()
     {
-        string distribution = "normal";
-
-        map<string, vector<float>> distributions = {
-            {"normal", {1, 0, 0}}, {"skewed", {0, 1, 0}}, {"uniform", {0, 0, 1}}};
-
-        return distributions[distribution];
+        return cal_dist(uniform_cdf);
     }
-
-    // string get_distribution()
-    // {
-
-    //     DataSet set
-
-    //     double distance = 0;
-    //     distance = hist.cal_similarity(uniform.hist);
-    //     if (distance < 0.1)
-    //     {
-    //         return "uniform";
-    //     }
-    //     distance = hist.cal_similarity(normal.hist);
-    //     if (distance < 0.1)
-    //     {
-    //         return "normal";
-    //     }
-    //     return "skewed";
-    // }
 };
 
 #endif

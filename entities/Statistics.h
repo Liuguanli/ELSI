@@ -2,47 +2,58 @@
 #define STAT_H
 #include <vector>
 #include <string>
+#include <sstream>
 #include "../utils/Constants.h"
 #include "DataSetInfo.h"
 
 using namespace std;
 
-template <typename D, typename T>
-class Statistices
+class Statistics
 {
 public:
-    DataSetInfo<T> current_info;
-    DataSetInfo<T> initial_info;
-    long cardinality;
+    float cardinality;
     long inserted;
     long deleted;
     float cdf_change;
+
     int initial_depth;
     int current_depth;
     float relative_depth;
+
     float update_ratio;
-    vector<float> distribution_encoding;
+    float distribution;
+
+    bool is_rebuild = false;
 
     void insert() { inserted++; }
     void remove() { deleted++; }
 
-    void get_input()
+    vector<float> get_input()
     {
         vector<float> parameters;
 
-        vector<float> distribution_list = current_info.get_distribution();
         parameters.push_back(cardinality);
 
-        cdf_change = current_info.cal_similarity(initial_info.cdf);
         parameters.push_back(cdf_change);
 
-        relative_depth = (float)current_depth / initial_depth;
+        // relative_depth = (initial_depth == 0 || current_depth == 0) ? 1 : (float)current_depth / initial_depth;
         parameters.push_back(relative_depth);
 
-        update_ratio = (float)inserted / cardinality;
         parameters.push_back(update_ratio);
-        parameters.insert(parameters.end(), distribution_list.begin(), distribution_list.end());
+
+        parameters.push_back(distribution);
+
+        return parameters;
     }
-};
+
+    string get_Statistics()
+    {
+        stringstream ss;
+        vector<float> parameters = get_input();
+        copy(parameters.begin(), parameters.end(), ostream_iterator<int>(ss, ","));
+        string s = ss.str();
+        // s = s.substr(0, s.length() - 1);
+        return s + to_string(is_rebuild ? 1 : 0);
+    };
 
 #endif
