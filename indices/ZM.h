@@ -76,6 +76,7 @@ namespace zm
     {
         int N = points.size();
         index_bit_num = ceil((log(N)) / log(2));
+        // cout << "index_bit_num:" << index_bit_num << endl;
         for (long i = 0; i < N; i++)
         {
             long long xs[2] = {(long long)(points[i].x * N), (long long)(points[i].y * N)};
@@ -359,15 +360,14 @@ namespace zm
         index.push_back(temp_index);
     }
 
-    void build_ZM()
+    void build_ZM(ExpRecorder &exp_recorder)
     {
         records.resize(stages.size());
         vector<vector<Point>> stage1(stages[0]);
         stage1[0] = dataset.points;
         records[0] = stage1;
 
-        print("build_ZM");
-
+        exp_recorder.timer_begin();
         for (size_t i = 0; i < stages.size(); i++)
         {
             vector<std::shared_ptr<MLP>> temp_index;
@@ -394,8 +394,12 @@ namespace zm
                 // TODO change records[i][j] to Dataset
                 // std::shared_ptr<MLP> mlp = framework.build(config::lambda, records[i][j]);
                 DataSet<Point, long long> original_data_set(records[i][j]);
-                int method = framework.build_predict_method(lambda, query_frequency, original_data_set);
-                cout << "method: " << method << endl;
+                int method = exp_recorder.build_method;
+                if (exp_recorder.is_framework)
+                {
+                    method = framework.build_predict_method(exp_recorder.upper_level_lambda, query_frequency, original_data_set);
+                }
+                // cout << "method: " << method << endl;
                 std::shared_ptr<MLP> mlp = framework.build_with_method(original_data_set, method);
 
                 temp_index.push_back(mlp);
@@ -404,6 +408,7 @@ namespace zm
                 for (Point point : records[i][j])
                 {
                     float pred = mlp->predict_ZM(point.normalized_key);
+                    // cout << "point.normalized_key: " << point.normalized_key << "   pred: " << pred << endl;
                     int pos = pred * next_stage_length;
                     // if (j > 50)
                     // {
@@ -433,19 +438,25 @@ namespace zm
 
             index.push_back(temp_index);
         }
-        print("begin finish");
+        exp_recorder.timer_end();
+        print("build time:" + to_string(exp_recorder.time / 1e9) + " s");
     }
 
-    void query()
+    void query(vector<Mbr> mbrs, ExpRecorder &exp_recorder)
     {
-        print("begin query");
         Query<Point> query;
         query.set_point_query()->set_query_points(dataset.points);
+        exp_recorder.timer_begin();
         framework.query(query);
+        exp_recorder.timer_end();
+        print("point query time: " + to_string(exp_recorder.time / dataset.points.size()));
 
-        vector<Mbr> mbrs;
+        cout << "mbrs:" << mbrs.size() << endl;
         query.set_window_query()->set_query_windows(mbrs);
+        exp_recorder.timer_begin();
         framework.query(query);
+        exp_recorder.timer_end();
+        print("window query time: " + to_string(exp_recorder.time / mbrs.size()));
 
         vector<Point> knn_query_points;
         int num = 1000;
@@ -455,8 +466,10 @@ namespace zm
             knn_query_points.push_back(dataset.points[index]);
         }
         query.set_knn_query()->set_knn_query_points(knn_query_points)->set_k(25);
+        exp_recorder.timer_begin();
         framework.query(query);
-
+        exp_recorder.timer_end();
+        print("knn query time: " + to_string(exp_recorder.time / knn_query_points.size()));
     }
 
     DataSet<Point, long long> generate_points(long cardinality, float dist)
@@ -537,11 +550,11 @@ namespace zm
         }
     }
 
-    void init(string _dataset_name)
+    void init(string _dataset_name, ExpRecorder &exp_recorder)
     {
         // dataset_name = _dataset_name;
         // generate_points();
-
+        exp_recorder.timer_begin();
         framework.point_query_p = point_query;
         framework.window_query_p = window_query;
         framework.knn_query_p = kNN_query;
@@ -556,15 +569,33 @@ namespace zm
         DataSet<Point, long long>::save_data_pointer = save_data;
         stages.push_back(1);
         framework.config_method_pool("ZM");
-        framework.init();
+        if (exp_recorder.is_framework)
+        {
+            framework.init();
+        }
+
+        stages.push_back(5000);
+
+        exp_recorder.timer_end();
+        print("framework init time:" + to_string((int)(exp_recorder.time / 1e9)) + "s");
+        exp_recorder.timer_begin();
 
         dataset.dataset_name = _dataset_name;
         dataset.read_data();
+        exp_recorder.timer_end();
+        print("read data time:" + to_string((int)(exp_recorder.time / 1e9)) + "s");
+        exp_recorder.timer_begin();
+
         dataset.mapping();
+        exp_recorder.timer_end();
+        print("mapping data time:" + to_string((int)(exp_recorder.time / 1e9)) + "s");
+        exp_recorder.timer_begin();
+
         N = dataset.points.size();
 
-        stages.push_back(5000);
         init_underlying_data_storage(dataset);
+        exp_recorder.timer_end();
+        print("data init time:" + to_string((int)(exp_recorder.time / 1e9)) + "s");
     }
 }
 #endif // use_gpu

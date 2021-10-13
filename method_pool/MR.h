@@ -40,14 +40,13 @@ public:
 
     inline static void load_pre_trained_model()
     {
-        print("    MR::load_pre_trained_model-->load");
+        print("MR::load_pre_trained_model-->load");
         if (pre_trained_dataset_info.size() > 0)
         {
             return;
         }
 
         string ppath = Constants::PRE_TRAIN_MODEL_PATH_ZM;
-        cout << "load_pre_trained_model_zm: ppath:" << ppath << endl;
 
         struct dirent *ptr;
         DIR *dir;
@@ -69,7 +68,7 @@ public:
                 pre_trained_dataset_info.insert(pair<string, DataSetInfo<T>>(prefix, info));
             }
         }
-        cout << "load finish..." << pre_trained_dataset_info.size() << endl;
+        // cout << "load finish..." << pre_trained_dataset_info.size() << endl;
     }
 
     inline static vector<float> get_cdf(string folder, string file_name)

@@ -27,7 +27,6 @@
 #include "method_pool/MR.h"
 #include "method_pool/method.h"
 
-#include "utils/Rebuild.h"
 #include "utils/MethodScorer.h"
 #include "utils/Log.h"
 #include "utils/Config.h"
@@ -143,8 +142,10 @@ public:
 #ifdef use_gpu
                     net->to(torch::kCUDA);
 #endif
-                    cout << "model_path" << model_path << endl;
+                    // cout << "model_path" << model_path << endl;
                     torch::load(net, model_path);
+                    net->get_parameters_ZM();
+
                     return net;
                 }
             }
@@ -178,7 +179,6 @@ public:
     void query(Query<D> query)
     {
         status = Constants::STATUS_FRAMEWORK_BEGIN_QUERY;
-        print("ELSI::query");
 
         if (query.is_point())
         {
@@ -400,8 +400,6 @@ private:
     {
         status = Constants::STATUS_FRAMEWORK_INIT_REBUILD_PROCESSOR;
 
-        print("   init rebuild models");
-
         string raw_data_path = "./data/rebuild_raw_data.csv";
 
         string path = "./data/rebuild_set_formatted.csv";
@@ -410,11 +408,12 @@ private:
         if (fin_rebuild)
         {
             torch::load(rebuild_model, rebuild_model_path);
-            print("    init_rebuild_processor-->load model finish");
+            print("init_rebuild_processor-->load model finish");
             status = Constants::STATUS_FRAMEWORK_INIT_REBUILD_PROCESSOR_LOAD_DONE;
         }
         else
         {
+            print("init rebuild models");
             string ppath = "/home/research/datasets/BASE/synthetic/";
             struct dirent *ptr;
             DIR *dir;
@@ -516,7 +515,6 @@ private:
             rebuild_model->train_model(parameters, labels);
             torch::save(rebuild_model, rebuild_model_path);
         }
-
 
         status = Constants::STATUS_FRAMEWORK_INIT_REBUILD_PROCESSOR_TRAIN_DONE;
         // }

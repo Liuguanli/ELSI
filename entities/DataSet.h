@@ -56,7 +56,7 @@ public:
         T gap = last_key - first_key;
         for (size_t i = 0; i < N; i++)
         {
-            normalized_keys.push_back((float)(keys[i] - last_key) / gap);
+            normalized_keys.push_back((float)(keys[i] - first_key) / gap);
         }
     }
 

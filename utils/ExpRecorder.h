@@ -31,6 +31,12 @@ public:
 
     int N = Constants::THRESHOLD;
 
+    bool is_framework = false;
+    bool is_update = false;
+    bool is_rebuildable = false;
+
+    string name;
+
     long long top_error = 0;
     long long bottom_error = 0;
     float loss = 0;
@@ -82,6 +88,8 @@ public:
 
     int rs_threshold_m = 10000;
     double model_reuse_threshold = 0.1;
+
+    int build_method = Constants::OG;
 
     string cluster_method = "kmeans";
     int cluster_size = 100;
@@ -144,6 +152,21 @@ public:
         {
             result += "cardinality:" + to_string(previous_insert_num + dataset_cardinality) + "\n";
         }
+    }
+
+    string get_file_name()
+    {
+        return distribution + "_" + to_string(dataset_cardinality) + "_" + to_string(skewness) + "_2_.csv";
+    }
+
+    string get_dataset_name()
+    {
+        return Constants::DATASETS + get_file_name();
+    }
+
+    string get_query_mbrs_name()
+    {
+        return Constants::QUERYPROFILES + Constants::WINDOW + distribution + "_" + to_string(dataset_cardinality) + "_" + to_string(skewness) + "_" + to_string(window_size) + "_" + to_string(window_ratio) + ".csv";
     }
 };
 
