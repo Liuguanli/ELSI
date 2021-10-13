@@ -49,34 +49,34 @@ public:
         string ppath = Constants::PRE_TRAIN_MODEL_PATH_ZM;
         cout << "load_pre_trained_model_zm: ppath:" << ppath << endl;
 
-        // struct dirent *ptr;
-        // DIR *dir;
-        // dir = opendir(ppath.c_str());
-        // while ((ptr = readdir(dir)) != NULL)
-        // {
-        //     if (ptr->d_name[0] == '.')
-        //         continue;
-        //     string file_name_s = ptr->d_name;
-        //     int find_result = file_name_s.find(".pt");
-        //     if (find_result > 0 && find_result <= file_name_s.length())
-        //     {
-        //         string prefix = file_name_s.substr(0, file_name_s.find(".pt"));
-        //         string feature_path = Constants::FEATURES_PATH_ZM + prefix + ".csv";
-        //         FileReader reader;
-        //         string path = Constants::PRE_TRAIN_1D_DATA;
-        //         vector<D> keys = get_keys(path, prefix + ".csv");
-        //         DataSetInfo<D> info(Constants::DEFAULT_BIN_NUM, keys);
-        //         pre_trained_dataset_info.insert(pair<string, DataSetInfo<D>>(prefix, info));
-        //     }
-        // }
+        struct dirent *ptr;
+        DIR *dir;
+        dir = opendir(ppath.c_str());
+        while ((ptr = readdir(dir)) != NULL)
+        {
+            if (ptr->d_name[0] == '.')
+                continue;
+            string file_name_s = ptr->d_name;
+            int find_result = file_name_s.find(".pt");
+            if (find_result > 0 && find_result <= file_name_s.length())
+            {
+                string prefix = file_name_s.substr(0, file_name_s.find(".pt"));
+                string feature_path = Constants::FEATURES_PATH_ZM + prefix + ".csv";
+                FileReader reader;
+                string path = Constants::PRE_TRAIN_1D_DATA;
+                vector<float> cdf = get_cdf(path, prefix + ".csv");
+                DataSetInfo<T> info(cdf);
+                pre_trained_dataset_info.insert(pair<string, DataSetInfo<T>>(prefix, info));
+            }
+        }
         cout << "load finish..." << pre_trained_dataset_info.size() << endl;
     }
 
-    inline static vector<T> get_keys(string folder, string file_name)
+    inline static vector<float> get_cdf(string folder, string file_name)
     {
         FileReader filereader(folder + file_name, ",");
-        vector<T> features = filereader.read_features();
-        return features;
+        vector<float> cdf = filereader.read_features();
+        return cdf;
     }
 };
 

@@ -75,6 +75,25 @@ public:
         points = read_data_pointer(dataset_name, ",", min_x, min_y, max_x, max_y);
     }
 
+    void read_cdf(string file_name)
+    {
+        ifstream file(file_name);
+        string line = "";
+        while (getline(file, line))
+        {
+            vector<string> vec;
+            boost::algorithm::split(vec, line, boost::is_any_of(","));
+            normalized_keys.push_back(stof(vec[1]));
+        }
+
+        file.close();
+        int N = normalized_keys.size();
+        for (size_t i = 0; i < N; i++)
+        {
+            labels.push_back((float)i / N);
+        }
+    }
+
     // void read_data(vector<D> (*pfun)(string, string, double &, double &, double &, double &))
     // {
     //     // assert(dataset_name != NULL && dataset_name != "");

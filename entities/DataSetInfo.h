@@ -29,6 +29,19 @@ public:
     vector<float> cdf;
     vector<float> uniform_cdf;
 
+    DataSetInfo() {}
+
+    DataSetInfo(vector<float> cdf)
+    {
+        this->cdf = cdf;
+        this->bin_num = cdf.size();
+        for (size_t i = 1; i < bin_num; i++)
+        {
+            uniform_cdf.push_back((float)i / bin_num);
+        }
+        uniform_cdf.push_back(1.0);
+    }
+
     DataSetInfo(int bin_num, vector<T> &data)
     {
         N = data.size();

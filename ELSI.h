@@ -46,7 +46,7 @@ public:
     int status = -1;
     std::shared_ptr<MLP> query_cost_model = std::make_shared<MLP>(8, 32);
     std::shared_ptr<MLP> build_cost_model = std::make_shared<MLP>(8, 32);
-    std::shared_ptr<MLP> rebuild_model = std::make_shared<MLP>(7, 32);
+    std::shared_ptr<MLP> rebuild_model = std::make_shared<MLP>(5, 32);
 
     void (*point_query_p)(Query<D>);
     void (*build_index_p)(DataSet<D, T>, int);
@@ -54,7 +54,9 @@ public:
     vector<D> (*window_query_p)(Query<D>);
     vector<D> (*knn_query_p)(Query<D>);
     void (*insert_p)(D);
+    DataSet<D, T> (*generate_points_p)(long, float);
     map<int, vector<float>> methods;
+    ExpRecorder exp_recorder;
 
     long max_cardinality = 10000000;
 
@@ -151,10 +153,10 @@ public:
         case Constants::OG:
             shrinked_data_set = original_data_set;
             break;
-        // case Constants::RL:
-        //     RL<D, T> rl;
-        //     shrinked_data_set = rl.do_rl(original_data_set, info, config::bit_num);
-        //     break;
+        case Constants::RL:
+            RL<D, T> rl;
+            shrinked_data_set = rl.do_rl(original_data_set, config::bit_num);
+            break;
         case Constants::RS:
             RS<T> rs;
             shrinked_data_set = rs.do_rs(original_data_set, config::rs_m);
@@ -173,13 +175,6 @@ public:
         return mlp;
     }
 
-    // std::shared_ptr<MLP> build(float lambda, vector<D> points)
-    // {
-    //     status = Constants::STATUS_FRAMEWORK_BUILD;
-    //     DataSet<D, T> original_data_set(points);
-    //     return build_with_method(original_data_set, build_predict_method(lambda, original_data_set));
-    // }
-
     void query(Query<D> query)
     {
         status = Constants::STATUS_FRAMEWORK_BEGIN_QUERY;
@@ -197,6 +192,7 @@ public:
         {
             knn_query(query);
         }
+
         status = Constants::STATUS_FRAMEWORK_BEGIN_QUERY_DONE;
     }
 
@@ -206,28 +202,24 @@ public:
         {
             point_query_p(query);
         }
-        if (extra_storage.size() > 0)
-        {
-            Point query_point;
-            // for (size_t i = 0; i < extra_storage.size(); i++)
-            // {
-            //     vector<Point>::iterator iter = find(extra_storage[i].children.begin(), extra_storage[i].children.end(), query_point);
-            //     if (iter != extra_storage[i].children.end())
-            //     {
-            //         break;
-            //     }
-            // }
-            vector<Point>::iterator iter = find(extra_storage.begin(), extra_storage.end(), query_point);
-            if (iter != extra_storage.end())
-            {
-            }
-        }
+        // if (extra_storage.size() > 0)
+        // {
+        //     for (D query_point : query.query_points)
+        //     {
+        //         // vector<D>::iterator iter = find(extra_storage.begin(), extra_storage.end(), query_point);
+        //         // if (iter != extra_storage.end())
+        //         // {
+        //         // }
+        //     }
+        // }
     }
 
     void window_query(Query<D> query)
     {
+
         if (window_query_p != NULL)
         {
+            print("window_query");
             window_query_p(query);
         }
     }
@@ -236,6 +228,7 @@ public:
     {
         if (knn_query_p == NULL)
         {
+            print("knn_query");
             knn_query_p(query);
         }
     }
@@ -272,10 +265,10 @@ public:
         //                     parameters.insert(parameters.end(), distribution_list.begin(), distribution_list.end());
 
         // #ifdef use_gpu
-        //                     torch::Tensor x = torch::tensor(temp, at::kCUDA).reshape({1, 7});
+        //                     torch::Tensor x = torch::tensor(temp, at::kCUDA).reshape({1, 5});
         //                     rebuild_model->to(torch::kCUDA);
         // #else
-        //                     torch::Tensor x = torch::tensor(temp).reshape({1, 7});
+        //                     torch::Tensor x = torch::tensor(temp).reshape({1, 5});
         // #endif
         //                     bool is_rebuild = rebuild_model->predict(x).item().toFloat() >= 0.5;
         status = 12;
@@ -321,7 +314,6 @@ private:
         }
         else
         {
-
             string ppath = "/home/research/datasets/BASE/synthetic/";
             struct dirent *ptr;
             DIR *dir;
@@ -351,23 +343,20 @@ private:
                     {
                         int method = iter->first;
                         ScorerItem item(stof(sub_string[0]), stof(sub_string[1]), iter->second);
-                        auto start = chrono::high_resolution_clock::now();
+                        exp_recorder.timer_begin();
                         build_index_p(dataset, method);
-                        auto finish = chrono::high_resolution_clock::now();
-                        long build_time = chrono::duration_cast<chrono::nanoseconds>(finish - start).count();
+                        exp_recorder.timer_end();
+                        long build_time = exp_recorder.time;
                         Query<D> point_query;
                         point_query.set_point_query()->set_query_points(dataset.points);
-                        start = chrono::high_resolution_clock::now();
+                        exp_recorder.timer_begin();
                         point_query_p(point_query);
-                        finish = chrono::high_resolution_clock::now();
-                        long query_time = chrono::duration_cast<chrono::nanoseconds>(finish - start).count() / dataset.points.size();
+                        exp_recorder.timer_end();
+                        long query_time = exp_recorder.time / dataset.points.size();
                         item.build_time = build_time;
                         item.query_time = query_time;
-
                         shortest_build_time = min(shortest_build_time, build_time);
-
                         shortest_query_time = min(shortest_query_time, query_time);
-
                         records.push_back(item);
                     }
                 }
@@ -409,122 +398,128 @@ private:
 
     void init_rebuild_processor()
     {
-//         status = Constants::STATUS_FRAMEWORK_INIT_REBUILD_PROCESSOR;
+        status = Constants::STATUS_FRAMEWORK_INIT_REBUILD_PROCESSOR;
 
-//         print("   init rebuild models");
+        print("   init rebuild models");
 
-//         string raw_data_path = "./data/rebuild_raw_data.csv";
+        string raw_data_path = "./data/rebuild_raw_data.csv";
 
-//         string path = "./data/rebuild_set_formatted.csv";
-//         string rebuild_model_path = "./data/rebuild_model.pt";
-//         std::ifstream fin_rebuild(rebuild_model_path);
-//         if (fin_rebuild)
-//         {
-//             torch::load(rebuild_model, rebuild_model_path);
-//             print("    init_rebuild_processor-->load model finish");
-//             status = Constants::STATUS_FRAMEWORK_INIT_REBUILD_PROCESSOR_LOAD_DONE;
-//         }
-//         else
-//         {
-//             string ppath = "/home/research/datasets/BASE/synthetic/";
-//             struct dirent *ptr;
-//             DIR *dir;
-//             dir = opendir(ppath.c_str());
-//             vector<Statistics> records;
-//             while ((ptr = readdir(dir)) != NULL)
-//             {
-//                 if (ptr->d_name[0] == '.')
-//                     continue;
-//                 string path = ptr->d_name;
-//                 int find_result = path.find(".csv");
-//                 if (find_result > 0 && find_result <= path.length())
-//                 {
-//                     string prefix = path.substr(0, path.find(".csv"));
-//                     vector<string> sub_string = split(prefix, "_");
-//                     // only consider the maximal data sets
-//                     if (stol(sub_string[0]) != max_cardinality)
-//                     {
-//                         continue;
-//                     }
-//                     print(ppath + path);
+        string path = "./data/rebuild_set_formatted.csv";
+        string rebuild_model_path = "./data/rebuild_model.pt";
+        std::ifstream fin_rebuild(rebuild_model_path);
+        if (fin_rebuild)
+        {
+            torch::load(rebuild_model, rebuild_model_path);
+            print("    init_rebuild_processor-->load model finish");
+            status = Constants::STATUS_FRAMEWORK_INIT_REBUILD_PROCESSOR_LOAD_DONE;
+        }
+        else
+        {
+            string ppath = "/home/research/datasets/BASE/synthetic/";
+            struct dirent *ptr;
+            DIR *dir;
+            dir = opendir(ppath.c_str());
+            vector<Statistics> records;
+            while ((ptr = readdir(dir)) != NULL)
+            {
+                if (ptr->d_name[0] == '.')
+                    continue;
+                string path = ptr->d_name;
+                int find_result = path.find(".csv");
+                if (find_result > 0 && find_result <= path.length())
+                {
+                    string prefix = path.substr(0, path.find(".csv"));
+                    vector<string> sub_string = split(prefix, "_");
+                    float dist = stof(sub_string[1]);
+                    // only consider the maximal data sets
+                    if (stol(sub_string[0]) != max_cardinality)
+                    {
+                        continue;
+                    }
+                    print(ppath + path);
 
-//                     DataSet<D, T> dataset;
-//                     dataset.dataset_name = ppath + path;
-//                     dataset.read_data();
-//                     dataset.mapping();
-//                     init_storage_p(dataset);
+                    DataSet<D, T> dataset;
+                    dataset.dataset_name = ppath + path;
+                    dataset.read_data();
+                    dataset.mapping();
+                    init_storage_p(dataset);
 
-//                     DataSetInfo<T> original_info(Constants::DEFAULT_BIN_NUM, dataset.keys);
-//                     DataSetInfo<T> current_info(Constants::DEFAULT_BIN_NUM, dataset.keys);
+                    // TODO generate synthetic points
+                    long base = max_cardinality / 100;
+                    for (size_t i = 0; i < 9; i++)
+                    {
+                        Query<D> point_query;
+                        point_query.set_point_query()->set_query_points(dataset.points);
 
-//                     // TODO generate synthetic points
-//                     int count = 0;
-//                     for (size_t i = 0; i < count; i++)
-//                     {
-//                         vector<Point> inserted_points;
-//                         Statistics statistics;
-//                         statistics.cardinality = dataset.points.size() / max_cardinality;
-//                         statistics.relative_depth = 1.0;
+                        DataSetInfo<T> original_info(Constants::DEFAULT_BIN_NUM, dataset.keys);
+                        DataSetInfo<T> current_info(Constants::DEFAULT_BIN_NUM, dataset.keys);
+                        // DataSet<D, T> inserted_dateset = generate_points_p(base, dist);
+                        DataSet<D, T> inserted_dateset = generate_points_p(base, 0);
+                        Statistics statistics;
+                        statistics.cardinality = (float)dataset.points.size() / max_cardinality;
+                        statistics.relative_depth = 1.0;
 
-//                         build_index_p(dataset, Constants::OG);
+                        build_index_p(dataset, Constants::OG);
+                        exp_recorder.timer_begin();
+                        point_query_p(point_query);
+                        exp_recorder.timer_end();
 
-//                         auto start = chrono::high_resolution_clock::now();
-//                         point_query_p(point_query);
-//                         auto finish = chrono::high_resolution_clock::now();
+                        long before_insert_query_time = exp_recorder.time / dataset.points.size();
 
-//                         long before_insert_query_time = chrono::duration_cast<chrono::nanoseconds>(finish - start).count() / dataset.points.size();
+                        for (size_t i = 0; i < base; i++)
+                        {
+                            insert(inserted_dateset.points[i]);
+                            statistics.insert();
+                            current_info.update(inserted_dateset.keys[i]);
+                        }
 
-//                         // TODO implement insert
-//                         for (Point point : inserted_points)
-//                         {
-//                             insert(point);
-//                             statistics.insert();
-//                         }
-//                         // TODO update current_info
-//                         current_info.update();
-//                         statistics.cdf_change = original_info.cal_dist(current_info.cdf);
-//                         statistics.relative_depth = 1.0;
-//                         statistics.update_ratio = (float)(statistics.inserted + statistics.deleted) / dataset.points.size();
-//                         statistics.distribution = current_info.get_distribution();
+                        statistics.cdf_change = original_info.cal_dist(current_info.cdf);
+                        statistics.relative_depth = 1.0;
+                        statistics.update_ratio = (float)(statistics.inserted + statistics.deleted) / dataset.points.size();
+                        statistics.distribution = current_info.get_distribution();
 
-//                         start = chrono::high_resolution_clock::now();
-//                         point_query_p(point_query);
-//                         finish = chrono::high_resolution_clock::now();
-//                         long after_insert_query_time = chrono::duration_cast<chrono::nanoseconds>(finish - start).count() / dataset.points.size();
+                        point_query.set_query_points(inserted_dateset.points);
+                        exp_recorder.timer_begin();
+                        point_query_p(point_query);
+                        exp_recorder.timer_end();
+                        long after_insert_query_time = exp_recorder.time / dataset.points.size();
+                        cout << "(float)(statistics.inserted + statistics.deleted) : " << (float)(statistics.inserted + statistics.deleted) << endl;
+                        cout << "dataset.points.size() : " << dataset.points.size() << endl;
+                        cout << "before_insert_query_time: " << before_insert_query_time << endl;
+                        cout << "after_insert_query_time: " << after_insert_query_time << endl;
+                        statistics.is_rebuild = ((float)after_insert_query_time / before_insert_query_time) > 1.1;
+                        cout << statistics.get_Statistics() << endl;
+                        records.push_back(statistics);
+                        base *= 2;
+                    }
+                }
+            }
 
-//                         records.push_back(statistics);
-//                     }
-//                 }
-//             }
+            // TODO setup extra storage and query methods.!
+            vector<float> parameters;
+            vector<float> labels;
 
-//             // TODO setup extra storage and query methods.!
-//             vector<float> parameters;
-//             vector<float> labels;
+            for (size_t i = 0; i < records.size(); i++)
+            {
+                vector<float> temp = records[i].get_input();
+                parameters.insert(parameters.end(), temp.begin(), temp.end());
+                labels.push_back(records[i].is_rebuild ? 1 : 0);
+            }
 
-//             for (size_t i = 0; i < records.size(); i++)
-//             {
-//                 vector<float> temp = records[i].get_input();
-//                 parameters.insert(parameters.end(), temp.begin(), temp.end());
-//                 labels.push_back(records[i].is_rebuild ? 1 : 0);
-//             }
+            FileWriter writer;
+            writer.write_statistics_items(records, raw_data_path);
 
-//             FileWriter writer;
-//             writer.write_statistics_items(records, raw_data_path);
+            // save
+#ifdef use_gpu
+            rebuild_model->to(torch::kCUDA);
+#endif
+            rebuild_model->train_model(parameters, labels);
+            torch::save(rebuild_model, rebuild_model_path);
+        }
 
-//             // save
-// #ifdef use_gpu
-//             rebuild_model->to(torch::kCUDA);
-// #endif
-//             rebuild_model->train_model(parameters, labels);
-//             torch::save(rebuild_model, rebuild_model_path);
-//         }
-//         // TODO finish RL
-//         // rebuild::generate_updates_data_set();
-//         // rebuild::build_simple_models_and_updates();
-//         // rebuild::generate_training_set();
-//         // rebuild::learn_rebuild_model();
-//         status = Constants::STATUS_FRAMEWORK_INIT_REBUILD_PROCESSOR_TRAIN_DONE;
-//         // }
+
+        status = Constants::STATUS_FRAMEWORK_INIT_REBUILD_PROCESSOR_TRAIN_DONE;
+        // }
     }
 };
 

@@ -21,6 +21,7 @@
 #include "../utils/SortTools.h"
 #include "../utils/Config.h"
 #include "../utils/Log.h"
+#include "../utils/ExpRecorder.h"
 #include "../curves/z.H"
 
 #include "../ELSI.h"
@@ -35,6 +36,7 @@ namespace zm
     vector<int> stages;
     vector<vector<std::shared_ptr<MLP>>> index;
     long N;
+    int index_bit_num;
     vector<vector<vector<Point>>> records;
     vector<LeafNode> storage_leafnodes;
     DataSet<Point, long long> dataset;
@@ -73,11 +75,11 @@ namespace zm
     void mapping(vector<Point> &points, vector<long long> &keys)
     {
         int N = points.size();
-        bit_num = ceil((log(N)) / log(2));
+        index_bit_num = ceil((log(N)) / log(2));
         for (long i = 0; i < N; i++)
         {
             long long xs[2] = {(long long)(points[i].x * N), (long long)(points[i].y * N)};
-            points[i].curve_val = compute_Z_value(xs, 2, bit_num);
+            points[i].curve_val = compute_Z_value(xs, 2, index_bit_num);
         }
         sort(points.begin(), points.end(), sort_curve_val());
 
@@ -122,10 +124,10 @@ namespace zm
         }
     }
 
-    int get_point_index(Point query_point, long index_low, long index_high)
+    int get_point_index(Point &query_point, long front, long back)
     {
         long long xs[2] = {(long long)(query_point.x * N), (long long)(query_point.y * N)};
-        long long curve_val = compute_Z_value(xs, 2, bit_num);
+        long long curve_val = compute_Z_value(xs, 2, index_bit_num);
         query_point.curve_val = curve_val;
         float key = (curve_val - first_key) * 1.0 / gap;
         query_point.normalized_key = key;
@@ -146,9 +148,9 @@ namespace zm
         min_error = index[level - 1][predicted_index]->min_error;
         max_error = index[level - 1][predicted_index]->max_error;
 
-        long front = predicted_index + min_error - error_shift;
+        front = predicted_index + min_error - error_shift;
         front = max((long)0, front);
-        long back = predicted_index + max_error + error_shift;
+        back = predicted_index + max_error + error_shift;
         back = max(N - 1, back);
         front = front / page_size;
         back = back / page_size;
@@ -163,33 +165,27 @@ namespace zm
         int query_num = query_points.size();
         for (size_t i = 0; i < query_num; i++)
         {
-            long front, back;
+            long front = 0, back = 0;
             int predicted_index = get_point_index(query_points[i], front, back);
-
-            // cout << "front: " << front << " back: " << back << endl;
             while (front <= back)
             {
                 int mid = (front + back) / 2;
-                LeafNode leafnode = storage_leafnodes[mid];
-                long long first_curve_val = leafnode.children[0].curve_val;
-                long long last_curve_val = leafnode.children[leafnode.children.size() - 1].curve_val;
+                long long first_curve_val = storage_leafnodes[mid].children[0].curve_val;
+                long long last_curve_val = storage_leafnodes[mid].children[storage_leafnodes[mid].children.size() - 1].curve_val;
                 // cout << "first_curve_val: " << first_curve_val << " last_curve_val: " << last_curve_val << endl;
 
                 if (first_curve_val <= query_points[i].curve_val && query_points[i].curve_val <= last_curve_val)
                 {
-                    vector<Point>::iterator iter = find(leafnode.children.begin(), leafnode.children.end(), query_points[i]);
-                    if (iter != leafnode.children.end())
-                    {
-                        break;
-                    }
-                    else
+                    vector<Point>::iterator iter = find(storage_leafnodes[mid].children.begin(), storage_leafnodes[mid].children.end(), query_points[i]);
+                    if (iter == storage_leafnodes[mid].children.end())
                     {
                         point_not_found++;
                     }
+                    break;
                 }
                 else
                 {
-                    if (leafnode.children[0].curve_val < query_points[i].curve_val)
+                    if (storage_leafnodes[mid].children[0].curve_val < query_points[i].curve_val)
                     {
                         front = mid + 1;
                     }
@@ -292,10 +288,52 @@ namespace zm
 
     void insert(Point point)
     {
+        long front, back;
+        int predicted_index = get_point_index(point, front, back);
+        error_shift++;
+        while (front <= back)
+        {
+            int mid = (front + back) / 2;
+            long long first_curve_val = storage_leafnodes[mid].children[0].curve_val;
+            long long last_curve_val = storage_leafnodes[mid].children[storage_leafnodes[mid].children.size() - 1].curve_val;
+            // cout << "first_curve_val: " << first_curve_val << " last_curve_val: " << last_curve_val << endl;
+
+            if (first_curve_val <= point.curve_val && point.curve_val <= last_curve_val)
+            {
+                if (storage_leafnodes[mid].is_full())
+                {
+                    storage_leafnodes[mid].add_point(point);
+                    sort(storage_leafnodes[mid].children.begin(), storage_leafnodes[mid].children.end(), sort_key());
+                    LeafNode right = storage_leafnodes[mid].split();
+                    storage_leafnodes.insert(storage_leafnodes.begin() + mid + 1, right);
+                    // error_shift += page_size;
+                    // index[stages.size() - 1][last_model_index]->max_error += page_size;
+                    // index[stages.size() - 1][last_model_index]->min_error -= page_size;
+                }
+                else
+                {
+                    storage_leafnodes[mid].add_point(point);
+                    sort(storage_leafnodes[mid].children.begin(), storage_leafnodes[mid].children.end(), sort_key());
+                }
+                return;
+            }
+            else
+            {
+                if (first_curve_val < point.curve_val)
+                {
+                    front = mid + 1;
+                }
+                else
+                {
+                    back = mid - 1;
+                }
+            }
+        }
     }
 
     void build_single_ZM(DataSet<Point, long long> dataset, int method)
     {
+        error_shift = 0;
         print("build_single_ZM");
 
         vector<std::shared_ptr<MLP>> temp_index;
@@ -321,38 +359,8 @@ namespace zm
         index.push_back(temp_index);
     }
 
-    void init(string _dataset_name)
-    {
-        // dataset_name = _dataset_name;
-        // generate_points();
-
-        framework.point_query_p = point_query;
-        framework.window_query_p = window_query;
-        framework.knn_query_p = kNN_query;
-        framework.build_index_p = build_single_ZM;
-        framework.init_storage_p = init_underlying_data_storage;
-        framework.insert_p = insert;
-        framework.max_cardinality = cardinality_u;
-
-        DataSet<Point, long long>::read_data_pointer = read_data;
-        DataSet<Point, long long>::mapping_pointer = mapping;
-        DataSet<Point, long long>::save_data_pointer = save_data;
-        stages.push_back(1);
-        framework.config_method_pool("ZM");
-        framework.init();
-
-        // dataset.dataset_name = _dataset_name;
-        // dataset.read_data();
-        // dataset.mapping();
-        // N = dataset.points.size();
-
-        // stages.push_back(5000);
-        // init_underlying_data_storage(dataset);
-    }
-
     void build_ZM()
     {
-
         records.resize(stages.size());
         vector<vector<Point>> stage1(stages[0]);
         stage1[0] = dataset.points;
@@ -387,6 +395,7 @@ namespace zm
                 // std::shared_ptr<MLP> mlp = framework.build(config::lambda, records[i][j]);
                 DataSet<Point, long long> original_data_set(records[i][j]);
                 int method = framework.build_predict_method(lambda, query_frequency, original_data_set);
+                cout << "method: " << method << endl;
                 std::shared_ptr<MLP> mlp = framework.build_with_method(original_data_set, method);
 
                 temp_index.push_back(mlp);
@@ -430,83 +439,132 @@ namespace zm
     void query()
     {
         print("begin query");
-        Query<Point> point_query;
-        point_query.set_point_query()->set_query_points(dataset.points);
-        framework.query(point_query);
+        Query<Point> query;
+        query.set_point_query()->set_query_points(dataset.points);
+        framework.query(query);
 
-        // Query<Point> window_query;
-        // vector<Mbr> windows;
-        // window_query.set_window_query()->set_query_windows(windows);
+        vector<Mbr> mbrs;
+        query.set_window_query()->set_query_windows(mbrs);
+        framework.query(query);
+
+        vector<Point> knn_query_points;
+        int num = 1000;
+        for (int i = 0; i < num; i++)
+        {
+            int index = rand() % dataset.points.size();
+            knn_query_points.push_back(dataset.points[index]);
+        }
+        query.set_knn_query()->set_knn_query_points(knn_query_points)->set_k(25);
+        framework.query(query);
+
     }
 
-    void generate_points()
+    DataSet<Point, long long> generate_points(long cardinality, float dist)
     {
-        print("generate_points");
-
+        DataSet<Point, long long> dataset;
         int bin_num_synthetic = 10;
 
+        int N = cardinality_u;
+        int bit_num = 8;
+        // long long xs_max[2] = {(long long)(N), (long long)(N)};
+        // long long max_key = compute_Z_value(xs_max, 2, bit_num);
+
+        long max_edge = pow(2, bit_num - 1) - 1;
+
+        long long max_key = compute_Z_value(max_edge, max_edge, bit_num);
+
+        // long long xs_min[2] = {(long long)(2), (long long)(2)};
+        // long long min_key = compute_Z_value(xs_min, 2, bit_num);
+
+        long long min_key = compute_Z_value(0, 0, bit_num);
+
+        long long gap = (max_key - min_key) / bin_num_synthetic;
+        int *counter_array = new int[bin_num_synthetic];
+
+        vector<Point> points;
+        counter_array[0] = (dist + 0.1) * cardinality_u;
+        int other_num = (cardinality_u - counter_array[0]) / (bin_num_synthetic - 1);
+        // cout << "counter_array[0]:" << counter_array[0] << endl;
+        // cout << "other_num:" << other_num << endl;
+
+        for (size_t j = 1; j < 10; j++)
+        {
+            counter_array[j] = other_num;
+        }
+        int temp = 0;
+        for (size_t j = 0; j < 10; j++)
+        {
+            temp += counter_array[j];
+        }
+
+        while (temp > 0)
+        {
+            int x = (rand() % (max_edge + 1));
+            int y = (rand() % (max_edge + 1));
+            // long long xs[2] = {(long long)(x), (long long)(y)};
+            // long long key = compute_Z_value(xs, 2, bit_num);
+            long long key = compute_Z_value((long long)(x), (long long)(y), bit_num);
+            int bin = (key - min_key) / gap;
+            // cout << "x:" << x << " y:" << y << " key:" << key << " bin:" << bin << endl;
+            if (bin < bin_num_synthetic && counter_array[bin] > 0)
+            {
+                counter_array[bin]--;
+                temp--;
+                Point point((float)x / max_edge, (float)y / max_edge);
+                points.push_back(point);
+            }
+            // cout << "bin:" << bin << endl;
+            // cout << "temp:" << temp << endl;
+        }
+        dataset.points = points;
+        dataset.mapping();
+        return dataset;
+    }
+
+    void generate_all_points()
+    {
+        print("generate_points");
+        int bin_num_synthetic = 10;
         while (cardinality_u >= cardinality_l)
         {
-            int N = cardinality_u;
-            int bit_num = 8;
-            // long long xs_max[2] = {(long long)(N), (long long)(N)};
-            // long long max_key = compute_Z_value(xs_max, 2, bit_num);
-
-            long max_edge = pow(2, bit_num - 1) - 1;
-
-            long long max_key = compute_Z_value(max_edge, max_edge, bit_num);
-
-            // long long xs_min[2] = {(long long)(2), (long long)(2)};
-            // long long min_key = compute_Z_value(xs_min, 2, bit_num);
-
-            long long min_key = compute_Z_value(0, 0, bit_num);
-
-            long long gap = (max_key - min_key) / bin_num_synthetic;
-            int *counter_array = new int[bin_num_synthetic];
-
             for (size_t i = 0; i < bin_num_synthetic; i++)
             {
-                vector<Point> points;
                 float dist = i * 0.1;
-                counter_array[0] = (dist + 0.1) * cardinality_u;
-                int other_num = (cardinality_u - counter_array[0]) / (bin_num_synthetic - 1);
-                // cout << "counter_array[0]:" << counter_array[0] << endl;
-                // cout << "other_num:" << other_num << endl;
-
-                for (size_t j = 1; j < 10; j++)
-                {
-                    counter_array[j] = other_num;
-                }
-                int temp = 0;
-                for (size_t j = 0; j < 10; j++)
-                {
-                    temp += counter_array[j];
-                }
-
-                while (temp > 0)
-                {
-                    int x = (rand() % (max_edge + 1));
-                    int y = (rand() % (max_edge + 1));
-                    // long long xs[2] = {(long long)(x), (long long)(y)};
-                    // long long key = compute_Z_value(xs, 2, bit_num);
-                    long long key = compute_Z_value((long long)(x), (long long)(y), bit_num);
-                    int bin = (key - min_key) / gap;
-                    // cout << "x:" << x << " y:" << y << " key:" << key << " bin:" << bin << endl;
-                    if (bin < bin_num_synthetic && counter_array[bin] > 0)
-                    {
-                        counter_array[bin]--;
-                        temp--;
-                        Point point((float)x / max_edge, (float)y / max_edge);
-                        points.push_back(point);
-                    }
-                    // cout << "bin:" << bin << endl;
-                    // cout << "temp:" << temp << endl;
-                }
                 string name = "/home/research/datasets/BASE/synthetic/" + to_string(cardinality_u) + "_" + to_string(dist) + ".csv";
-                save_data(points, name);
+                save_data(generate_points(cardinality_u, dist).points, name);
             }
             cardinality_u /= 10;
         }
+    }
+
+    void init(string _dataset_name)
+    {
+        // dataset_name = _dataset_name;
+        // generate_points();
+
+        framework.point_query_p = point_query;
+        framework.window_query_p = window_query;
+        framework.knn_query_p = kNN_query;
+        framework.build_index_p = build_single_ZM;
+        framework.init_storage_p = init_underlying_data_storage;
+        framework.insert_p = insert;
+        framework.generate_points_p = generate_points;
+        framework.max_cardinality = cardinality_u;
+
+        DataSet<Point, long long>::read_data_pointer = read_data;
+        DataSet<Point, long long>::mapping_pointer = mapping;
+        DataSet<Point, long long>::save_data_pointer = save_data;
+        stages.push_back(1);
+        framework.config_method_pool("ZM");
+        framework.init();
+
+        dataset.dataset_name = _dataset_name;
+        dataset.read_data();
+        dataset.mapping();
+        N = dataset.points.size();
+
+        stages.push_back(5000);
+        init_underlying_data_storage(dataset);
     }
 }
 #endif // use_gpu

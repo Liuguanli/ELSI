@@ -11,6 +11,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <getopt.h>
+#include <chrono>
+
 #include "entities/Point.h"
 #include "entities/Query.h"
 #include "entities/DataSet.h"
@@ -74,10 +76,15 @@ int main(int argc, char **argv)
 {
     // string dataset_name = "/home/research/datasets/skewed_2000000_4_2_.csv";
     string dataset_name = "/home/research/datasets/OSM_100000000_1_2_.csv";
-    // zm::init(dataset_name);
-    // zm::build_ZM();
-    // zm::query();
-    // zm::generate_points();
+    zm::init(dataset_name);
+    zm::build_ZM();
+    zm::query();
+
+    // TODO record time
+    // TODO write file
+    // TODO RSMI
+    // TODO lisa
+    // TODO ML-index
 }
 
 #endif // use_gpu

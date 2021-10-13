@@ -11,6 +11,6 @@ datasets/*
 *.eps
 *.png
 *.txtExample_ZM.o
-# data/*
+data/*.csv
 Example.o
 Example

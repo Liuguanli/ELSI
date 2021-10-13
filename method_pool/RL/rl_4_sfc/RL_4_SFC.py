@@ -24,10 +24,11 @@ def cal_dist(source_cdf, target_cdf):
 
 def cal_reward(source_cdf, target_cdf):
     length = len(source_cdf)
+    gap = int(len(target_cdf) / length)
     max_err = 0.0
     for i in range(length):
-        if abs(source_cdf[i] - target_cdf[i]) > max_err:
-            max_err = abs(source_cdf[i] - target_cdf[i])
+        if abs(source_cdf[i] - target_cdf[i * gap]) > max_err:
+            max_err = abs(source_cdf[i] - target_cdf[i * gap])
     return max_err
     # length = len(source_cdf)
     # res = 0.0
@@ -146,7 +147,7 @@ def train_sfc(RL, sfc, cdf, target_cdf):
             RL.store_transition(np.array(sfc), action, reward, np.array(sfc2))
         if (step > MEMORY_CAPACITY) and (step % 10 == 0):
             RL.learn()
-        temp_dist = cal_dist(source_cdf, target_cdf)
+        temp_dist = cal_reward(source_cdf, target_cdf)
         if temp_dist < min_dist:
             min_dist = temp_dist
             min_sfc = sfc_new
@@ -271,7 +272,7 @@ def run_exp(parameters):
         target_pdf, target_cdf = get_pdf_cdf(input_file)
         source_cdf, new_cdf, target_cdf, min_dist, new_sfc = run(bin_num, target_pdf, target_cdf, method_name)
 
-        write_SFC(bin_num, new_sfc, new_cdf, output_file)
+        write_SFC(new_sfc, new_cdf, output_file)
         source_cdfs.append(source_cdf)
         new_cdfs.append(new_cdf)
         target_cdfs.append(target_cdf)

@@ -77,13 +77,13 @@ struct sortForKNN2
     }
 };
 
-
 struct sortX
 {
     bool operator()(const Point point1, const Point point2)
     {
-        if (point1.x == point2.x) {
-            return (point1.y < point2.y); 
+        if (point1.x == point2.x)
+        {
+            return (point1.y < point2.y);
         }
         return (point1.x < point2.x);
     }
@@ -93,8 +93,9 @@ struct sortY
 {
     bool operator()(const Point point1, const Point point2)
     {
-        if (point1.y == point2.y) {
-            return (point1.x < point2.x); 
+        if (point1.y == point2.y)
+        {
+            return (point1.x < point2.x);
         }
         return (point1.y < point2.y);
     }
@@ -108,12 +109,12 @@ struct sort_curve_val
     }
 };
 
-// struct sort_key
-// {
-//     bool operator()(const Point point1, const Point point2)
-//     {
-//         return (point1.key < point2.key);
-//     }
-// };
+struct sort_key
+{
+    bool operator()(const Point point1, const Point point2)
+    {
+        return (point1.normalized_key < point2.normalized_key);
+    }
+};
 
 #endif

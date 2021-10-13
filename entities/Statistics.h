@@ -12,8 +12,8 @@ class Statistics
 {
 public:
     float cardinality;
-    long inserted;
-    long deleted;
+    long inserted = 0;
+    long deleted = 0;
     float cdf_change;
 
     int initial_depth;
@@ -50,7 +50,7 @@ public:
     {
         stringstream ss;
         vector<float> parameters = get_input();
-        copy(parameters.begin(), parameters.end(), ostream_iterator<int>(ss, ","));
+        copy(parameters.begin(), parameters.end(), ostream_iterator<float>(ss, ","));
         string s = ss.str();
         // s = s.substr(0, s.length() - 1);
         return s + to_string(is_rebuild ? 1 : 0);
