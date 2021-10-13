@@ -27,10 +27,10 @@ public:
     void write_counted_SFC(vector<int>, string);
     void write_SFC(vector<float>, string);
 
-    // void write_build(ExpRecorder);
-    // void write_point_query(ExpRecorder);
-    // void write_window_query(ExpRecorder);
-    // void write_kNN_query(ExpRecorder);
+    void write_build(ExpRecorder);
+    void write_point_query(ExpRecorder);
+    void write_window_query(ExpRecorder);
+    void write_kNN_query(ExpRecorder);
     // void write_acc_window_query(ExpRecorder);
     // void write_acc_kNN_query(ExpRecorder);
     // void write_insert(ExpRecorder);

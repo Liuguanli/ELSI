@@ -399,6 +399,7 @@ namespace zm
                 {
                     method = framework.build_predict_method(exp_recorder.upper_level_lambda, query_frequency, original_data_set);
                 }
+                
                 // cout << "method: " << method << endl;
                 std::shared_ptr<MLP> mlp = framework.build_with_method(original_data_set, method);
 

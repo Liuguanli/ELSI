@@ -18,3 +18,5 @@ Example
 indices/*
 !indices/ZM.h
 files/*
+
+out.txt

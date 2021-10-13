@@ -107,6 +107,13 @@ public:
     double upper_level_lambda = 0.8;
     double lower_level_lambda = 0.8;
 
+    int sp_num = 0;
+    int model_reuse_num = 0;
+    int rl_num = 0;
+    int cluster_num = 0;
+    int rs_num = 0;
+    int original_num = 0;
+
     int insert_rebuild_index = 0;
 
     long traverse_time = 0;
@@ -118,6 +125,33 @@ public:
     bool is_window = false;
     bool is_point = false;
     bool is_insert = false;
+
+    void record_method_nums(int method)
+    {
+        switch (method)
+        {
+        case Constants::OG:
+            original_num++;
+            break;
+        case Constants::MR:
+            model_reuse_num++;
+            break;
+        case Constants::CL:
+            cluster_num++;
+            break;
+        case Constants::RS:
+            rs_num++;
+            break;
+        case Constants::RL:
+            rl_num++;
+            break;
+        case Constants::SP:
+            sp_num++;
+            break;
+        default:
+            break;
+        }
+    }
 
     string get_current_time()
     {
@@ -156,17 +190,73 @@ public:
 
     string get_file_name()
     {
-        return distribution + "_" + to_string(dataset_cardinality) + "_" + to_string(skewness) + "_2_.csv";
+        return distribution + "_" + to_string(dataset_cardinality) + "_" + to_string(skewness);
     }
 
     string get_dataset_name()
     {
-        return Constants::DATASETS + get_file_name();
+        return Constants::DATASETS + get_file_name() + "_2_.csv";
     }
 
     string get_query_mbrs_name()
     {
         return Constants::QUERYPROFILES + Constants::WINDOW + distribution + "_" + to_string(dataset_cardinality) + "_" + to_string(skewness) + "_" + to_string(window_size) + "_" + to_string(window_ratio) + ".csv";
+    }
+
+    string get_build_result()
+    {
+        string result = "--------------------" + get_current_time() + "--------------------";
+        result += "time:" + to_string(time) + "\n";
+
+        if (is_framework)
+        {
+            result += "FRAMEWORK" + "\n";
+            result += "lambda:" + to_string(upper_level_lambda) + "\n";
+            result += "sp_num:" + to_string(sp_num) + "\n";
+            result += "model_reuse_num:" + to_string(model_reuse_num) + "\n";
+            result += "rl_num:" + to_string(rl_num) + "\n";
+            result += "cluster_num:" + to_string(cluster_num) + "\n";
+            result += "rs_num:" + to_string(rs_num) + "\n";
+            result += "original:" + to_string(original_num) + "\n";
+        }
+
+        return result;
+    }
+
+    string get_point_query_result()
+    {
+        string result = "--------------------" + get_current_time() + "--------------------";
+        result += "time:" + to_string(time) + "\n";
+        if (is_framework)
+        {
+            result += "FRAMEWORK" + "\n";
+            result += "lambda:" + to_string(upper_level_lambda) + "\n";
+        }
+        return result;
+    }
+
+    string get_window_query_result()
+    {
+        string result = "--------------------" + get_current_time() + "--------------------";
+        result += "time:" + to_string(time) + "\n";
+        if (is_framework)
+        {
+            result += "FRAMEWORK" + "\n";
+            result += "lambda:" + to_string(upper_level_lambda) + "\n";
+        }
+        return result;
+    }
+
+    string get_knn_query_result()
+    {
+        string result = "--------------------" + get_current_time() + "--------------------";
+        result += "time:" + to_string(time) + "\n";
+        if (is_framework)
+        {
+            result += "FRAMEWORK" + "\n";
+            result += "lambda:" + to_string(upper_level_lambda) + "\n";
+        }
+        return result;
     }
 };
 
