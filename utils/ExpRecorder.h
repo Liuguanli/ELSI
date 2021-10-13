@@ -105,6 +105,20 @@ public:
 
     int bit_num = 0;
 
+    bool is_rebuild = false;
+    bool is_knn = false;
+    bool is_window = false;
+    bool is_point = false;
+    bool is_insert = false;
+
+    string get_current_time()
+    {
+        time_t now = std::time(0);
+        char *dt = ctime(&now);
+        std::string str(dt);
+        return str;
+    }
+
     chrono::high_resolution_clock::time_point start;
     chrono::high_resolution_clock::time_point finish;
 
@@ -117,6 +131,19 @@ public:
     {
         finish = chrono::high_resolution_clock::now();
         time = chrono::duration_cast<chrono::nanoseconds>(finish - start).count();
+    }
+
+    // Point query : time , page access,
+
+    string get_time_size_errors()
+    {
+        string result = "--------------------" + get_current_time() + "--------------------";
+        result += "time:" + to_string(time) + "\n";
+        result += "is_rebuild:" + to_string(is_rebuild) + "\n";
+        if (is_rebuild)
+        {
+            result += "cardinality:" + to_string(previous_insert_num + dataset_cardinality) + "\n";
+        }
     }
 };
 
