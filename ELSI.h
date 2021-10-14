@@ -264,22 +264,16 @@ public:
         }
     }
 
-    bool is_rebuild()
+    bool is_rebuild(Statistics statistics)
     {
         status = 11;
-        //                     parameters.push_back(cardinality);
-        //                     parameters.push_back(cdf_change);
-        //                     parameters.push_back(relative_depth);
-        //                     parameters.push_back(update_ratio);
-        //                     parameters.insert(parameters.end(), distribution_list.begin(), distribution_list.end());
-
-        // #ifdef use_gpu
-        //                     torch::Tensor x = torch::tensor(temp, at::kCUDA).reshape({1, 5});
-        //                     rebuild_model->to(torch::kCUDA);
-        // #else
-        //                     torch::Tensor x = torch::tensor(temp).reshape({1, 5});
-        // #endif
-        //                     bool is_rebuild = rebuild_model->predict(x).item().toFloat() >= 0.5;
+#ifdef use_gpu
+        torch::Tensor x = torch::tensor(statistics.get_input(), at::kCUDA).reshape({1, 5});
+        rebuild_model->to(torch::kCUDA);
+#else
+        torch::Tensor x = torch::tensor(statistics.get_input()).reshape({1, 5});
+#endif
+        bool is_rebuild = rebuild_model->predict(x).item().toFloat() >= 0.5;
         status = 12;
         return false;
     }
@@ -496,7 +490,7 @@ private:
                         cout << "before_insert_query_time: " << before_insert_query_time << endl;
                         cout << "after_insert_query_time: " << after_insert_query_time << endl;
                         statistics.is_rebuild = ((float)after_insert_query_time / before_insert_query_time) > 1.1;
-                        cout << statistics.get_Statistics() << endl;
+                        cout << statistics.to_string() << endl;
                         records.push_back(statistics);
                         base *= 2;
                     }

@@ -26,7 +26,7 @@ void FileWriter::write_statistics_items(vector<Statistics> items, string file_na
     int N = items.size();
     for (size_t i = 0; i < N; i++)
     {
-        write << items[i].get_Statistics() << endl;
+        write << items[i].to_string() << endl;
     }
     write.close();
 }
