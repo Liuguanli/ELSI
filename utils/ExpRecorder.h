@@ -3,11 +3,13 @@
 
 #include <vector>
 #include <string>
+#include <chrono>
 #include <queue>
 #include "../entities/Point.h"
 #include "../entities/Statistics.h"
 #include "Constants.h"
 #include "SortTools.h"
+
 using namespace std;
 
 class ExpRecorder
@@ -175,19 +177,6 @@ public:
         time = chrono::duration_cast<chrono::nanoseconds>(finish - start).count();
     }
 
-    // Point query : time , page access,
-
-    string get_time_size_errors()
-    {
-        string result = "--------------------" + get_current_time() + "--------------------";
-        result += "time:" + to_string(time) + "\n";
-        result += "is_rebuild:" + to_string(is_rebuild) + "\n";
-        if (is_rebuild)
-        {
-            result += "cardinality:" + to_string(previous_insert_num + dataset_cardinality) + "\n";
-        }
-    }
-
     string get_file_name()
     {
         return distribution + "_" + to_string(dataset_cardinality) + "_" + to_string(skewness);
@@ -205,12 +194,12 @@ public:
 
     string get_build_result()
     {
-        string result = "--------------------" + get_current_time() + "--------------------";
+        string result = "--------------------" + get_current_time();
         result += "time:" + to_string(time) + "\n";
 
         if (is_framework)
         {
-            result += "FRAMEWORK" + "\n";
+            result += "FRAMEWORK\n";
             result += "lambda:" + to_string(upper_level_lambda) + "\n";
             result += "sp_num:" + to_string(sp_num) + "\n";
             result += "model_reuse_num:" + to_string(model_reuse_num) + "\n";
@@ -225,11 +214,11 @@ public:
 
     string get_point_query_result()
     {
-        string result = "--------------------" + get_current_time() + "--------------------";
+        string result = "--------------------" + get_current_time();
         result += "time:" + to_string(time) + "\n";
         if (is_framework)
         {
-            result += "FRAMEWORK" + "\n";
+            result += "FRAMEWORK\n";
             result += "lambda:" + to_string(upper_level_lambda) + "\n";
         }
         return result;
@@ -237,11 +226,11 @@ public:
 
     string get_window_query_result()
     {
-        string result = "--------------------" + get_current_time() + "--------------------";
+        string result = "--------------------" + get_current_time();
         result += "time:" + to_string(time) + "\n";
         if (is_framework)
         {
-            result += "FRAMEWORK" + "\n";
+            result += "FRAMEWORK\n";
             result += "lambda:" + to_string(upper_level_lambda) + "\n";
         }
         return result;
@@ -249,11 +238,11 @@ public:
 
     string get_knn_query_result()
     {
-        string result = "--------------------" + get_current_time() + "--------------------";
+        string result = "--------------------" + get_current_time();
         result += "time:" + to_string(time) + "\n";
         if (is_framework)
         {
-            result += "FRAMEWORK" + "\n";
+            result += "FRAMEWORK\n";
             result += "lambda:" + to_string(upper_level_lambda) + "\n";
         }
         return result;

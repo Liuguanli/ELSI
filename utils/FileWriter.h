@@ -9,6 +9,7 @@
 #include "../entities/Mbr.h"
 #include "../entities/ScorerItem.h"
 #include "../entities/Statistics.h"
+#include "../utils/ExpRecorder.h"
 // #include <boost/algorithm/Mbr.hpp>
 using namespace std;
 class FileWriter
@@ -57,7 +58,6 @@ public:
     // void write_learned_cdf(ExpRecorder, vector<float> cdf);
 
     void write_cost_model_data(int cardinality, string distribution, string method, double build_time, double query_time);
-
 };
 
 #endif

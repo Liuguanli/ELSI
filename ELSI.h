@@ -47,11 +47,11 @@ public:
     std::shared_ptr<MLP> build_cost_model = std::make_shared<MLP>(8, 32);
     std::shared_ptr<MLP> rebuild_model = std::make_shared<MLP>(5, 32);
 
-    void (*point_query_p)(Query<D>);
+    void (*point_query_p)(Query<D> &);
     void (*build_index_p)(DataSet<D, T>, int);
     void (*init_storage_p)(DataSet<D, T>);
-    vector<D> (*window_query_p)(Query<D>);
-    vector<D> (*knn_query_p)(Query<D>);
+    vector<D> (*window_query_p)(Query<D> &);
+    vector<D> (*knn_query_p)(Query<D> &);
     void (*insert_p)(D);
     DataSet<D, T> (*generate_points_p)(long, float);
     map<int, vector<float>> methods;
@@ -182,14 +182,19 @@ public:
 
         if (query.is_point())
         {
+            print("point");
+
             point_query(query);
         }
         if (query.is_window())
         {
+            print("window");
+
             window_query(query);
         }
         if (query.is_knn())
         {
+            print("knn");
             knn_query(query);
         }
 
@@ -200,6 +205,8 @@ public:
     {
         if (point_query_p != NULL)
         {
+            print("point_query");
+
             point_query_p(query);
         }
         // if (extra_storage.size() > 0)
@@ -220,15 +227,17 @@ public:
         if (window_query_p != NULL)
         {
             print("window_query");
+
             window_query_p(query);
         }
     }
 
     void knn_query(Query<D> query)
     {
-        if (knn_query_p == NULL)
+        if (knn_query_p != NULL)
         {
             print("knn_query");
+
             knn_query_p(query);
         }
     }

@@ -74,7 +74,7 @@ namespace zm
 
     void mapping(vector<Point> &points, vector<long long> &keys)
     {
-        int N = points.size();
+        N = points.size();
         index_bit_num = ceil((log(N)) / log(2));
         // cout << "index_bit_num:" << index_bit_num << endl;
         for (long i = 0; i < N; i++)
@@ -125,7 +125,7 @@ namespace zm
         }
     }
 
-    int get_point_index(Point &query_point, long front, long back)
+    int get_point_index(Point &query_point, long &front, long &back)
     {
         long long xs[2] = {(long long)(query_point.x * N), (long long)(query_point.y * N)};
         long long curve_val = compute_Z_value(xs, 2, index_bit_num);
@@ -148,18 +148,20 @@ namespace zm
         next_stage_length = N;
         min_error = index[level - 1][predicted_index]->min_error;
         max_error = index[level - 1][predicted_index]->max_error;
+        predicted_index = index[level - 1][predicted_index]->predict_ZM(key) * next_stage_length;
 
         front = predicted_index + min_error - error_shift;
         front = max((long)0, front);
         back = predicted_index + max_error + error_shift;
-        back = max(N - 1, back);
+        back = min(N - 1, back);
         front = front / page_size;
         back = back / page_size;
+
         // cout << "predicted_index: " << predicted_index << " max_error: " << max_error << " min_error: " << min_error << " error_shift: " << error_shift << endl;
         return predicted_index;
     }
 
-    void point_query(Query<Point> query)
+    void point_query(Query<Point> &query)
     {
         int point_not_found = 0;
         vector<Point> query_points = query.get_query_points();
@@ -200,7 +202,7 @@ namespace zm
         cout << "point_not_found: " << point_not_found << endl;
     }
 
-    vector<Point> window_query(Query<Point> query)
+    vector<Point> window_query(Query<Point> &query)
     {
         int point_not_found = 0;
         vector<Mbr> query_windows = query.get_query_windows();
@@ -208,6 +210,7 @@ namespace zm
         vector<Point> window_query_results;
         for (size_t i = 0; i < query_num; i++)
         {
+            // cout << "i:" << i << endl;
             vector<Point> vertexes = query_windows[i].get_corner_points();
             vector<long> indices;
             for (Point point : vertexes)
@@ -216,12 +219,13 @@ namespace zm
                 get_point_index(point, index_low, index_high);
                 indices.push_back(index_low);
                 indices.push_back(index_high);
+                // cout << "index_low:" << index_low << " index_high:" << index_high << endl;
             }
             sort(indices.begin(), indices.end());
 
             long front = indices.front();
             long back = indices.back();
-
+            // cout << "front: " << front << " back: " << back << endl;
             for (size_t j = front; j <= back; j++)
             {
                 if (storage_leafnodes[j].mbr.interact(query_windows[i]))
@@ -239,7 +243,7 @@ namespace zm
         return window_query_results;
     }
 
-    vector<Point> kNN_query(Query<Point> query)
+    vector<Point> kNN_query(Query<Point> &query)
     {
         vector<Point> knn_query_points = query.get_knn_query_points();
         int query_num = knn_query_points.size();
@@ -250,7 +254,7 @@ namespace zm
         for (size_t i = 0; i < query_num; i++)
         {
             priority_queue<Point, vector<Point>, sortForKNN2> pq;
-            float knn_query_side = sqrt((float)k / N) * 2;
+            float knn_query_side = sqrt((float)k / N);
             while (true)
             {
                 vector<Mbr> window = {Mbr::get_mbr(knn_query_points[i], knn_query_side)};
@@ -280,10 +284,10 @@ namespace zm
                         break;
                     }
                 }
+
                 knn_query_side *= 2;
             }
         }
-
         return result;
     }
 
@@ -399,7 +403,7 @@ namespace zm
                 {
                     method = framework.build_predict_method(exp_recorder.upper_level_lambda, query_frequency, original_data_set);
                 }
-                
+                exp_recorder.record_method_nums(method);
                 // cout << "method: " << method << endl;
                 std::shared_ptr<MLP> mlp = framework.build_with_method(original_data_set, method);
 
@@ -443,34 +447,12 @@ namespace zm
         print("build time:" + to_string(exp_recorder.time / 1e9) + " s");
     }
 
-    void query(vector<Mbr> mbrs, ExpRecorder &exp_recorder)
+    void query(Query<Point> query, ExpRecorder &exp_recorder)
     {
-        Query<Point> query;
-        query.set_point_query()->set_query_points(dataset.points);
+        print("query--------------------");
         exp_recorder.timer_begin();
         framework.query(query);
         exp_recorder.timer_end();
-        print("point query time: " + to_string(exp_recorder.time / dataset.points.size()));
-
-        cout << "mbrs:" << mbrs.size() << endl;
-        query.set_window_query()->set_query_windows(mbrs);
-        exp_recorder.timer_begin();
-        framework.query(query);
-        exp_recorder.timer_end();
-        print("window query time: " + to_string(exp_recorder.time / mbrs.size()));
-
-        vector<Point> knn_query_points;
-        int num = 1000;
-        for (int i = 0; i < num; i++)
-        {
-            int index = rand() % dataset.points.size();
-            knn_query_points.push_back(dataset.points[index]);
-        }
-        query.set_knn_query()->set_knn_query_points(knn_query_points)->set_k(25);
-        exp_recorder.timer_begin();
-        framework.query(query);
-        exp_recorder.timer_end();
-        print("knn query time: " + to_string(exp_recorder.time / knn_query_points.size()));
     }
 
     DataSet<Point, long long> generate_points(long cardinality, float dist)

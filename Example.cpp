@@ -130,7 +130,7 @@ float areas[] = {0.000006, 0.000025, 0.0001, 0.0004, 0.0016};
 float ratios[] = {0.25, 0.5, 1, 2, 4};
 int window_length = sizeof(areas) / sizeof(areas[0]);
 int ratio_length = sizeof(ratios) / sizeof(ratios[0]);
-int query_window_num = 1000;
+int query_num = 1000;
 
 void get_mbrs(map<string, vector<Mbr>> &mbrs_map, ExpRecorder &exp_recorder)
 {
@@ -159,12 +159,39 @@ int main(int argc, char **argv)
     // string dataset_name = "/home/research/datasets/OSM_100000000_1_2_.csv";
     string dataset_name = exp_recorder.get_dataset_name();
     print("dataset_name:" + dataset_name);
+    FileWriter file_writer;
     zm::init(dataset_name, exp_recorder);
     zm::build_ZM(exp_recorder);
-    zm::query(mbrs_map[to_string(areas[2]) + to_string(ratios[2])], exp_recorder);
+    exp_recorder.time /= 1e9;
+    file_writer.write_build(exp_recorder);
 
-    // TODO write file
-    
+    Query<Point> query;
+    query.set_point_query()->set_query_points(zm::dataset.points);
+    zm::query(query, exp_recorder);
+    exp_recorder.time /= dataset.points.size();
+    file_writer.write_point_query(exp_recorder);
+
+    vector<Mbr> mbrs = mbrs_map[to_string(areas[2]) + to_string(ratios[2])];
+    query.set_window_query()->set_query_windows(mbrs);
+    zm::query(query, exp_recorder);
+    exp_recorder.time /= query_num;
+    file_writer.write_window_query(exp_recorder);
+
+    vector<Point> knn_query_points;
+    for (int i = 0; i < query_num; i++)
+    {
+        int index = rand() % zm::dataset.points.size();
+        knn_query_points.push_back(zm::dataset.points[index]);
+    }
+    query.set_knn_query()->set_knn_query_points(knn_query_points)->set_k(25);
+    zm::query(query, exp_recorder);
+    exp_recorder.time /= query_num;
+    file_writer.write_kNN_query(exp_recorder);
+
+    // TODO point query !!!
+    // TODO knn query!!!!
+
+
     // TODO RSMI
     // TODO lisa
     // TODO ML-index

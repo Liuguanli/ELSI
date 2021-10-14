@@ -7,7 +7,6 @@
 #include "util.h"
 #include "../entities/Point.h"
 #include "../entities/Mbr.h"
-#include "../utils/ExpRecorder.h"
 
 using namespace std;
 
@@ -155,7 +154,7 @@ void FileWriter::write_point_query(ExpRecorder exp_recorder)
     write.close();
 }
 
-void write_window_query(ExpRecorder exp_recorder)
+void FileWriter::write_window_query(ExpRecorder exp_recorder)
 {
     ofstream write;
     string folder = Constants::RECORDS + Constants::WINDOW;
