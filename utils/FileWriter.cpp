@@ -4,7 +4,7 @@
 #include <fstream>
 #include <cmath>
 #include <math.h>
-#include "util.h"
+#include "Util.h"
 #include "../entities/Point.h"
 #include "../entities/Mbr.h"
 
@@ -26,7 +26,7 @@ void FileWriter::write_statistics_items(vector<Statistics> items, string file_na
     int N = items.size();
     for (size_t i = 0; i < N; i++)
     {
-        write << items[i].to_string() << endl;
+        write << items[i].statistics_to_string() << endl;
     }
     write.close();
 }

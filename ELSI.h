@@ -29,6 +29,7 @@
 
 #include "utils/MethodScorer.h"
 #include "utils/Log.h"
+#include "utils/Util.h"
 #include "utils/Config.h"
 #include "utils/Constants.h"
 
@@ -279,25 +280,6 @@ public:
     }
 
 private:
-    vector<string> split(const string &str, const string &pattern)
-    {
-        vector<string> res;
-        if (str == "")
-            return res;
-        string strs = str + pattern;
-        size_t pos = strs.find(pattern);
-
-        while (pos != strs.npos)
-        {
-            string temp = strs.substr(0, pos);
-            res.push_back(temp);
-            strs = strs.substr(pos + 1, strs.size());
-            pos = strs.find(pattern);
-        }
-
-        return res;
-    }
-
     void init_build_processor()
     {
         status = Constants::STATUS_FRAMEWORK_INIT_BUILD_PROCESSOR;
@@ -334,7 +316,10 @@ private:
                 {
                     print(ppath + path);
                     string prefix = path.substr(0, path.find(".csv"));
-                    vector<string> sub_string = split(prefix, "_");
+
+                    vector<string> sub_string;
+                    boost::algorithm::split(sub_string, prefix, boost::is_any_of("_"));
+
                     DataSet<D, T> dataset;
                     dataset.dataset_name = ppath + path;
 
@@ -431,7 +416,10 @@ private:
                 if (find_result > 0 && find_result <= path.length())
                 {
                     string prefix = path.substr(0, path.find(".csv"));
-                    vector<string> sub_string = split(prefix, "_");
+
+                    vector<string> sub_string;
+                    boost::algorithm::split(sub_string, prefix, boost::is_any_of("_"));
+
                     float dist = stof(sub_string[1]);
                     // only consider the maximal data sets
                     if (stol(sub_string[0]) != max_cardinality)
@@ -490,7 +478,7 @@ private:
                         cout << "before_insert_query_time: " << before_insert_query_time << endl;
                         cout << "after_insert_query_time: " << after_insert_query_time << endl;
                         statistics.is_rebuild = ((float)after_insert_query_time / before_insert_query_time) > 1.1;
-                        cout << statistics.to_string() << endl;
+                        cout << statistics.statistics_to_string() << endl;
                         records.push_back(statistics);
                         base *= 2;
                     }

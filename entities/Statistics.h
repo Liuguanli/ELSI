@@ -46,7 +46,7 @@ public:
         return parameters;
     }
 
-    string to_string()
+    string statistics_to_string()
     {
         stringstream ss;
         vector<float> parameters = get_input();
