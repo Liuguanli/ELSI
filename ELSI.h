@@ -112,7 +112,7 @@ public:
             build_score[i] = build_cost_model->predict(x).item().toFloat();
             query_score[i] = query_cost_model->predict(x).item().toFloat();
 
-            float score = build_score[i] * lambda + query_score[i] * (1 - lambda);
+            float score = build_score[i] * lambda + query_score[i] * query_frequency * (1 - lambda);
             if (score > max)
             {
                 max = score;
