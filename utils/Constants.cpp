@@ -29,14 +29,13 @@ const string Constants::INSERTPOINT = "insertPoint/";
 const string Constants::INSERTWINDOW = "insertWindow/";
 const string Constants::INSERTACCWINDOW = "insertAccWindow/";
 const string Constants::INSERTKNN = "insertKnn/";
-const string Constants::INSERTACCKNN= "insertAccKnn/";
-const string Constants::DELETEPOINT= "delete_point/";
-const string Constants::DELETEWINDOW= "deleteWindow/";
-const string Constants::DELETEACCWINDOW= "deleteAccWindow/";
-const string Constants::DELETEKNN= "deleteKnn/";
-const string Constants::DELETEACCKNN= "deleteAccKnn/";
-const string Constants::LEARNED_CDF= "learned_cdf/";
-
+const string Constants::INSERTACCKNN = "insertAccKnn/";
+const string Constants::DELETEPOINT = "delete_point/";
+const string Constants::DELETEWINDOW = "deleteWindow/";
+const string Constants::DELETEACCWINDOW = "deleteAccWindow/";
+const string Constants::DELETEKNN = "deleteKnn/";
+const string Constants::DELETEACCKNN = "deleteAccKnn/";
+const string Constants::LEARNED_CDF = "learned_cdf/";
 
 const string Constants::TORCH_MODELS = "/home/liuguanli/Dropbox/shared/VLDB20/codes/rsmi/torch_models/";
 const string Constants::TORCH_MODELS_ZM = "/home/liuguanli/Dropbox/shared/VLDB20/codes/rsmi/torch_models_zm/";
@@ -58,6 +57,16 @@ const string Constants::PRE_TRAIN_MODEL_PATH_RSMI = "/home/liuguanli/Documents/p
 
 const string Constants::CLUSTER_FILE = "/home/liuguanli/Dropbox/research/BASE/method_pool/CL/cluster.py";
 const string Constants::RL_FILE = "/home/liuguanli/Dropbox/research/BASE/method_pool/RL/rl_4_sfc/RL_4_SFC.py";
+
+const string Constants::BUILD_TIME_MODEL_PATH = "./data/build_time_model_zm.pt";
+const string Constants::QUERY_TIME_MODEL_PATH = "./data/query_time_model_zm.pt";
+const string Constants::RAW_DATA_PATH = "./data/scorer_raw_data.csv";
+
+const string Constants::SYNTHETIC_DATA_PATH = "/home/research/datasets/BASE/synthetic/";
+
+const string Constants::REBUILD_RAW_DATA_PATH = "./data/rebuild_raw_data.csv";
+const string Constants::REBUILD_DATA_PATH = "./data/rebuild_set_formatted.csv";
+const string Constants::REBUILD_MODEL_PATH = "./data/rebuild_model.pt";
 
 const double Constants::LEARNING_RATE = 0.05;
 

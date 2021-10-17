@@ -16,7 +16,8 @@ public:
         vector<D> points;
         int sample_gap = 1 / sampling_rate;
         long long counter = 0;
-        int start = (rand() % (sample_gap));
+        // int start = (rand() % (sample_gap));
+        int start = 0;
         int count = data_set.points.size();
         for (size_t i = start; i < count; i += sample_gap)
         {

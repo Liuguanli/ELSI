@@ -9,6 +9,7 @@ class Point
 {
 
 public:
+    //  For ZM-index
     float x = 0.0;
     float y = 0.0;
     long long curve_val;
@@ -16,6 +17,10 @@ public:
     int index = 0;
     float normalized_key;
     double temp_dist;
+
+    // For ML-index
+    int partition_id;
+    float key;
 
     Point()
     {

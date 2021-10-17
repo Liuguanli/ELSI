@@ -133,6 +133,16 @@ public:
     static const string CLUSTER_FILE;
     static const string RL_FILE;
 
+    static const string BUILD_TIME_MODEL_PATH;
+    static const string QUERY_TIME_MODEL_PATH;
+    static const string RAW_DATA_PATH;
+
+    static const string REBUILD_RAW_DATA_PATH;
+    static const string REBUILD_DATA_PATH;
+    static const string REBUILD_MODEL_PATH;
+
+    static const string SYNTHETIC_DATA_PATH;
+
     Constants();
 };
 

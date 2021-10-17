@@ -22,6 +22,7 @@
 #include "curves/z.H"
 
 #include "indices/ZM.h"
+#include "indices/ML.h"
 #include "ELSI.h"
 
 using namespace std;
@@ -160,41 +161,65 @@ int main(int argc, char **argv)
     string dataset_name = exp_recorder.get_dataset_name();
     print("dataset_name:" + dataset_name);
     FileWriter file_writer;
-    zm::init(dataset_name, exp_recorder);
-    zm::build_ZM(exp_recorder);
+
+    // zm::init(dataset_name, exp_recorder);
+    // zm::build_ZM(exp_recorder);
+    // exp_recorder.time /= 1e9;
+    // file_writer.write_build(exp_recorder);
+
+    // Query<Point> query;
+    // query.set_point_query()->query_points = zm::dataset.points;
+    // // ->set_query_points(zm::dataset.points);
+    // zm::query(query, exp_recorder);
+    // exp_recorder.time /= dataset.points.size();
+    // file_writer.write_point_query(exp_recorder);
+
+    // vector<Mbr> mbrs = mbrs_map[to_string(areas[2]) + to_string(ratios[2])];
+    // query.set_window_query()->query_windows = mbrs;
+    // // ->set_query_windows(mbrs);
+    // zm::query(query, exp_recorder);
+    // exp_recorder.time /= query_num;
+    // file_writer.write_window_query(exp_recorder);
+
+    // vector<Point> knn_query_points;
+    // for (int i = 0; i < query_num; i++)
+    // {
+    //     int index = rand() % zm::dataset.points.size();
+    //     knn_query_points.push_back(zm::dataset.points[index]);
+    // }
+    // query.set_knn_query()->set_k(25)->knn_query_points = knn_query_points;
+    // // set_knn_query_points(knn_query_points)->
+    // zm::query(query, exp_recorder);
+    // exp_recorder.time /= query_num;
+    // file_writer.write_kNN_query(exp_recorder);
+
+    ml::init(dataset_name, exp_recorder);
+    ml::build_ZM(exp_recorder);
     exp_recorder.time /= 1e9;
     file_writer.write_build(exp_recorder);
 
     Query<Point> query;
-    query.set_point_query()->set_query_points(zm::dataset.points);
-    zm::query(query, exp_recorder);
+    query.set_point_query()->query_points = ml::dataset.points;
+    ml::query(query, exp_recorder);
     exp_recorder.time /= dataset.points.size();
     file_writer.write_point_query(exp_recorder);
 
     vector<Mbr> mbrs = mbrs_map[to_string(areas[2]) + to_string(ratios[2])];
-    query.set_window_query()->set_query_windows(mbrs);
-    zm::query(query, exp_recorder);
+    query.set_window_query()->query_windows = mbrs;
+    ml::query(query, exp_recorder);
     exp_recorder.time /= query_num;
     file_writer.write_window_query(exp_recorder);
 
     vector<Point> knn_query_points;
     for (int i = 0; i < query_num; i++)
     {
-        int index = rand() % zm::dataset.points.size();
-        knn_query_points.push_back(zm::dataset.points[index]);
+        int index = rand() % ml::dataset.points.size();
+        knn_query_points.push_back(ml::dataset.points[index]);
     }
-    query.set_knn_query()->set_knn_query_points(knn_query_points)->set_k(25);
-    zm::query(query, exp_recorder);
+    query.set_knn_query()->set_k(25)->knn_query_points = knn_query_points;
+    ml::query(query, exp_recorder);
     exp_recorder.time /= query_num;
     file_writer.write_kNN_query(exp_recorder);
-
-    // TODO point query !!!
-    // TODO knn query!!!!
-
-
-    // TODO RSMI
-    // TODO lisa
-    // TODO ML-index
 }
 
 #endif // use_gpu

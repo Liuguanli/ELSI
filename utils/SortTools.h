@@ -113,7 +113,7 @@ struct sort_key
 {
     bool operator()(const Point point1, const Point point2)
     {
-        return (point1.normalized_key < point2.normalized_key);
+        return (point1.key < point2.key);
     }
 };
 

@@ -51,8 +51,8 @@ public:
     void (*point_query_p)(Query<D> &);
     void (*build_index_p)(DataSet<D, T>, int);
     void (*init_storage_p)(DataSet<D, T>);
-    vector<D> (*window_query_p)(Query<D> &);
-    vector<D> (*knn_query_p)(Query<D> &);
+    void (*window_query_p)(Query<D> &);
+    void (*knn_query_p)(Query<D> &);
     void (*insert_p)(D);
     DataSet<D, T> (*generate_points_p)(long, float);
     map<int, vector<float>> methods;
@@ -177,7 +177,7 @@ public:
         return mlp;
     }
 
-    void query(Query<D> query)
+    void query(Query<D> &query)
     {
         status = Constants::STATUS_FRAMEWORK_BEGIN_QUERY;
 
@@ -202,7 +202,7 @@ public:
         status = Constants::STATUS_FRAMEWORK_BEGIN_QUERY_DONE;
     }
 
-    void point_query(Query<D> query)
+    void point_query(Query<D> &query)
     {
         if (point_query_p != NULL)
         {
@@ -222,7 +222,7 @@ public:
         // }
     }
 
-    void window_query(Query<D> query)
+    void window_query(Query<D> &query)
     {
 
         if (window_query_p != NULL)
@@ -233,7 +233,7 @@ public:
         }
     }
 
-    void knn_query(Query<D> query)
+    void knn_query(Query<D> &query)
     {
         if (knn_query_p != NULL)
         {
@@ -285,9 +285,10 @@ private:
         status = Constants::STATUS_FRAMEWORK_INIT_BUILD_PROCESSOR;
         // string build_time_model_path = "/home/liuguanli/Dropbox/shared/VLDB20/codes/rsmi/cost_model/build_time_model_zm.pt";
         // string query_time_model_path = "/home/liuguanli/Dropbox/shared/VLDB20/codes/rsmi/cost_model/query_time_model_zm.pt";
-        string build_time_model_path = "./data/build_time_model_zm.pt";
-        string query_time_model_path = "./data/query_time_model_zm.pt";
-        string raw_data_path = "./data/scorer_raw_data.csv";
+        string build_time_model_path = Constants::BUILD_TIME_MODEL_PATH;
+        string query_time_model_path = Constants::QUERY_TIME_MODEL_PATH;
+        string raw_data_path = Constants::RAW_DATA_PATH;
+
         std::ifstream fin_build(build_time_model_path);
         std::ifstream fin_query(query_time_model_path);
         if (fin_build && fin_query)
@@ -299,7 +300,7 @@ private:
         }
         else
         {
-            string ppath = "/home/research/datasets/BASE/synthetic/";
+            string ppath = Constants::SYNTHETIC_DATA_PATH;
             struct dirent *ptr;
             DIR *dir;
             dir = opendir(ppath.c_str());
@@ -336,7 +337,8 @@ private:
                         exp_recorder.timer_end();
                         long build_time = exp_recorder.time;
                         Query<D> point_query;
-                        point_query.set_point_query()->set_query_points(dataset.points);
+                        point_query.set_point_query()->query_points = dataset.points;
+                        // ->set_query_points(dataset.points);
                         exp_recorder.timer_begin();
                         point_query_p(point_query);
                         exp_recorder.timer_end();
@@ -387,11 +389,9 @@ private:
     void init_rebuild_processor()
     {
         status = Constants::STATUS_FRAMEWORK_INIT_REBUILD_PROCESSOR;
-
-        string raw_data_path = "./data/rebuild_raw_data.csv";
-
-        string path = "./data/rebuild_set_formatted.csv";
-        string rebuild_model_path = "./data/rebuild_model.pt";
+        string raw_data_path = Constants::REBUILD_RAW_DATA_PATH;
+        string path = Constants::REBUILD_DATA_PATH;
+        string rebuild_model_path = Constants::REBUILD_MODEL_PATH;
         std::ifstream fin_rebuild(rebuild_model_path);
         if (fin_rebuild)
         {
@@ -402,7 +402,7 @@ private:
         else
         {
             print("init rebuild models");
-            string ppath = "/home/research/datasets/BASE/synthetic/";
+            string ppath = Constants::SYNTHETIC_DATA_PATH;
             struct dirent *ptr;
             DIR *dir;
             dir = opendir(ppath.c_str());
@@ -439,7 +439,8 @@ private:
                     for (size_t i = 0; i < 9; i++)
                     {
                         Query<D> point_query;
-                        point_query.set_point_query()->set_query_points(dataset.points);
+                        point_query.set_point_query()->query_points = dataset.points;
+                        // set_query_points(dataset.points);
 
                         DataSetInfo<T> original_info(Constants::DEFAULT_BIN_NUM, dataset.keys);
                         DataSetInfo<T> current_info(Constants::DEFAULT_BIN_NUM, dataset.keys);
@@ -468,7 +469,8 @@ private:
                         statistics.update_ratio = (float)(statistics.inserted + statistics.deleted) / dataset.points.size();
                         statistics.distribution = current_info.get_distribution();
 
-                        point_query.set_query_points(inserted_dateset.points);
+                        point_query.query_points = dataset.points;
+                        // set_query_points(inserted_dateset.points);
                         exp_recorder.timer_begin();
                         point_query_p(point_query);
                         exp_recorder.timer_end();
@@ -508,7 +510,6 @@ private:
         }
 
         status = Constants::STATUS_FRAMEWORK_INIT_REBUILD_PROCESSOR_TRAIN_DONE;
-        // }
     }
 };
 

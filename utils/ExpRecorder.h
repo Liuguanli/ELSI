@@ -228,6 +228,8 @@ public:
     {
         string result = "--------------------" + get_current_time();
         result += "time:" + to_string(time) + "\n";
+        result += "accuracy:" + to_string(accuracy) + "\n";
+
         if (is_framework)
         {
             result += "FRAMEWORK\n";
@@ -240,6 +242,8 @@ public:
     {
         string result = "--------------------" + get_current_time();
         result += "time:" + to_string(time) + "\n";
+        result += "accuracy:" + to_string(accuracy) + "\n";
+
         if (is_framework)
         {
             result += "FRAMEWORK\n";
