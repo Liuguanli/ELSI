@@ -28,41 +28,67 @@ public:
     vector<float> normalized_keys;
     vector<float> labels;
 
+    vector<float> input_keys;
+
     string dataset_name;
 
     inline static vector<D> (*read_data_pointer)(string, string, double &, double &, double &, double &);
     inline static void (*mapping_pointer)(vector<D> &, vector<T> &);
     inline static void (*save_data_pointer)(vector<D>, string);
 
-    // void generate_keys(vector<T> (*pfun)(vector<D>))
-    // {
-    //     generate_keys_pointer = pfun;
-    //     keys = generate_keys_pointer(points);
-    //     generate_labels();
-    // }
+    inline static void (*gen_input_keys_pointer)(vector<D> &, vector<float> &);
+
+    DataSet() {}
+    DataSet(string path) { this->dataset_name = path; }
+    DataSet(vector<D> &points)
+    {
+        this->points = points;
+        for (size_t i = 0; i < points.size(); i++)
+        {
+            keys.push_back(points[i].key);
+            // keys.push_back(points[i].curve_val);
+            labels.push_back(points[i].label);
+            normalized_keys.push_back(points[i].normalized_key);
+        }
+    }
+
 
     void mapping()
     {
-        mapping_pointer(points, keys);
+        if (mapping_pointer != NULL)
+        {
+            mapping_pointer(points, keys);
+        }
+
         generate_labels();
         generate_normalized_keys();
     }
 
     void generate_normalized_keys()
     {
-        int N = keys.size();
-        T first_key = keys[0];
-        T last_key = keys[keys.size() - 1];
-        T gap = last_key - first_key;
-        for (size_t i = 0; i < N; i++)
+
+        normalized_keys.clear();
+        normalized_keys.shrink_to_fit();
+        if (gen_input_keys_pointer == NULL)
         {
-            normalized_keys.push_back((float)(keys[i] - first_key) / gap);
+            int N = keys.size();
+            T first_key = keys[0];
+            T last_key = keys[keys.size() - 1];
+            T gap = last_key - first_key;
+            for (size_t i = 0; i < N; i++)
+            {
+                normalized_keys.push_back((float)(keys[i] - first_key) / gap);
+            }
+        }
+        else
+        {
+            gen_input_keys_pointer(points, normalized_keys);
         }
     }
 
     void generate_labels()
     {
-        int N = keys.size();
+        int N = points.size();
         for (size_t i = 0; i < N; i++)
         {
             labels.push_back((float)i / N);
@@ -75,6 +101,22 @@ public:
         points = read_data_pointer(dataset_name, ",", min_x, min_y, max_x, max_y);
     }
 
+    void read_cdf_2d(string file_name)
+    {
+        ifstream file(file_name);
+        string line = "";
+        while (getline(file, line))
+        {
+            vector<string> vec;
+            boost::algorithm::split(vec, line, boost::is_any_of(","));
+            normalized_keys.push_back(stof(vec[0]));
+            normalized_keys.push_back(stof(vec[1]));
+            labels.push_back(stof(vec[2]));
+        }
+
+        file.close();
+    }
+
     void read_cdf(string file_name)
     {
         ifstream file(file_name);
@@ -83,14 +125,14 @@ public:
         {
             vector<string> vec;
             boost::algorithm::split(vec, line, boost::is_any_of(","));
-            normalized_keys.push_back(stof(vec[1]));
+            labels.push_back(stof(vec[1]));
         }
 
         file.close();
-        int N = normalized_keys.size();
+        int N = labels.size();
         for (size_t i = 0; i < N; i++)
         {
-            labels.push_back((float)i / N);
+            normalized_keys.push_back((float)i / N);
         }
     }
 
@@ -104,7 +146,6 @@ public:
     string path = "./data/temp.csv";
     void save_temp_data()
     {
-        cout << "points.size() : " << points.size() << endl;
         save_data_pointer(points, path);
     }
 
@@ -113,19 +154,6 @@ public:
         char s[path.length() + 1];
         strcpy(s, path.c_str());
         remove(s);
-    }
-
-    DataSet() {}
-    DataSet(string path) { this->dataset_name = path; }
-    DataSet(vector<D> &points)
-    {
-        this->points = points;
-        for (size_t i = 0; i < points.size(); i++)
-        {
-            keys.push_back(points[i].curve_val);
-            labels.push_back(points[i].label);
-            normalized_keys.push_back(points[i].normalized_key);
-        }
     }
 
     DataSet(vector<T> &keys, vector<float> &labels)

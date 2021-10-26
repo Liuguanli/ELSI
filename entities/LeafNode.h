@@ -14,6 +14,7 @@ public:
     Mbr mbr;
     vector<Point> children;
     LeafNode();
+    LeafNode(int id);
     LeafNode(Mbr mbr);
     LeafNode(vector<Point>);
     void add_point(Point);

@@ -201,14 +201,13 @@ public:
         {
             result += "FRAMEWORK\n";
             result += "lambda:" + to_string(upper_level_lambda) + "\n";
-            result += "sp_num:" + to_string(sp_num) + "\n";
-            result += "model_reuse_num:" + to_string(model_reuse_num) + "\n";
-            result += "rl_num:" + to_string(rl_num) + "\n";
-            result += "cluster_num:" + to_string(cluster_num) + "\n";
-            result += "rs_num:" + to_string(rs_num) + "\n";
-            result += "original:" + to_string(original_num) + "\n";
         }
-
+        result += "og_num:" + to_string(original_num) + "\n";
+        result += "mr_num:" + to_string(model_reuse_num) + "\n";
+        result += "sp_num:" + to_string(sp_num) + "\n";
+        result += "rl_num:" + to_string(rl_num) + "\n";
+        result += "rs_num:" + to_string(rs_num) + "\n";
+        result += "cl_num:" + to_string(cluster_num) + "\n";
         return result;
     }
 
@@ -221,6 +220,13 @@ public:
             result += "FRAMEWORK\n";
             result += "lambda:" + to_string(upper_level_lambda) + "\n";
         }
+        result += "og_num:" + to_string(original_num) + "\n";
+        result += "mr_num:" + to_string(model_reuse_num) + "\n";
+        result += "sp_num:" + to_string(sp_num) + "\n";
+        result += "rl_num:" + to_string(rl_num) + "\n";
+        result += "rs_num:" + to_string(rs_num) + "\n";
+        result += "cl_num:" + to_string(cluster_num) + "\n";
+
         return result;
     }
 
@@ -235,6 +241,12 @@ public:
             result += "FRAMEWORK\n";
             result += "lambda:" + to_string(upper_level_lambda) + "\n";
         }
+        result += "og_num:" + to_string(original_num) + "\n";
+        result += "mr_num:" + to_string(model_reuse_num) + "\n";
+        result += "sp_num:" + to_string(sp_num) + "\n";
+        result += "rl_num:" + to_string(rl_num) + "\n";
+        result += "rs_num:" + to_string(rs_num) + "\n";
+        result += "cl_num:" + to_string(cluster_num) + "\n";
         return result;
     }
 
@@ -249,6 +261,12 @@ public:
             result += "FRAMEWORK\n";
             result += "lambda:" + to_string(upper_level_lambda) + "\n";
         }
+        result += "og_num:" + to_string(original_num) + "\n";
+        result += "mr_num:" + to_string(model_reuse_num) + "\n";
+        result += "sp_num:" + to_string(sp_num) + "\n";
+        result += "rl_num:" + to_string(rl_num) + "\n";
+        result += "rs_num:" + to_string(rs_num) + "\n";
+        result += "cl_num:" + to_string(cluster_num) + "\n";
         return result;
     }
 };

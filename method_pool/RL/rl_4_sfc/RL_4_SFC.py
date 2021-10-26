@@ -211,7 +211,7 @@ def draw_cdf(source_cdfs, new_cdfs, target_cdfs, labels):
     plt.savefig("sfcs.png", format='png', bbox_inches='tight')
     plt.show()
 
-def run(bin_num, target_pdf, target_cdf, method_name):
+def run(bin_num, target_cdf, method_name):
     sfc = [1 for i in range(bin_num)]
     source_cdf = [float(i+1)/bin_num for i in range(bin_num)]
     new_sfc, min_dist = train_sfc(choose_RL(method_name, bin_num), sfc, source_cdf, target_cdf)
@@ -270,13 +270,13 @@ def run_exp(parameters):
     # for bit_num in bit_nums:
     for method_name in method_names:
         target_pdf, target_cdf = get_pdf_cdf(input_file)
-        source_cdf, new_cdf, target_cdf, min_dist, new_sfc = run(bin_num, target_pdf, target_cdf, method_name)
+        source_cdf, new_cdf, target_cdf, min_dist, new_sfc = run(bin_num, target_cdf, method_name)
 
         write_SFC(new_sfc, new_cdf, output_file)
         source_cdfs.append(source_cdf)
         new_cdfs.append(new_cdf)
         target_cdfs.append(target_cdf)
-        labels.append(method_name + "-" + str(pow(2, bin_num)) + " cells    dist=" + str(min_dist))
+        labels.append(method_name + "-" + str(bin_num) + " cells    dist=" + str(min_dist))
     # draw_cdf(source_cdfs, new_cdfs, target_cdfs, labels)
     # draw_cdf_8t8(source_cdfs, new_cdfs, target_cdfs, labels)
 

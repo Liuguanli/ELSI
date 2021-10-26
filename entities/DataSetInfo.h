@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <map>
-
+#include <iostream>
 #include "../utils/Constants.h"
 #include <cmath>
 #include <assert.h>
@@ -20,7 +20,7 @@ private:
 
     T start_x;
     T end_x;
-    T key_gap;
+    float key_gap;
 
     int N = 0;
 
@@ -31,15 +31,29 @@ public:
 
     DataSetInfo() {}
 
-    DataSetInfo(vector<float> cdf)
+    // DataSetInfo(vector<float> cdf)
+    // {
+    //     this->cdf = cdf;
+    //     this->bin_num = cdf.size();
+    //     for (size_t i = 1; i < bin_num; i++)
+    //     {
+    //         uniform_cdf.push_back((float)i / bin_num);
+    //     }
+    //     uniform_cdf.push_back(1.0);
+    // }
+
+    DataSetInfo(vector<float> raw_cdf)
     {
-        this->cdf = cdf;
-        this->bin_num = cdf.size();
+        float gap = (float)raw_cdf.size() / bin_num;
+        // cout << "bin_num: " << bin_num << endl;
+        // cout << "cdf.size(): " << cdf.size() << endl;
         for (size_t i = 1; i < bin_num; i++)
         {
+            cdf.push_back(raw_cdf[(int)i * gap]);
             uniform_cdf.push_back((float)i / bin_num);
         }
         uniform_cdf.push_back(1.0);
+        cdf.push_back(1.0);
     }
 
     DataSetInfo(int bin_num, vector<T> &data)
@@ -48,9 +62,11 @@ public:
         assert(N > 0);
         start_x = data[0];
         end_x = data[N - 1];
-
+        // cout << "start_x: " << start_x << endl;
+        // cout << "end_x: " << end_x << endl;
         this->bin_num = bin_num;
-        key_gap = (end_x - start_x) * 1.0 / bin_num;
+        float key_gap = (end_x - start_x) * 1.0 / bin_num;
+        // cout << "key_gap: " << key_gap << endl;
         int cdf_index = 0;
         for (size_t i = 1; i < bin_num; i++)
         {

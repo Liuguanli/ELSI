@@ -7,6 +7,8 @@ using namespace std;
 
 LeafNode::LeafNode() {}
 
+LeafNode::LeafNode(int id) { this->id = id; }
+
 LeafNode::LeafNode(Mbr mbr) { this->mbr = mbr; }
 
 LeafNode::LeafNode(vector<Point> points) { add_points(points); }

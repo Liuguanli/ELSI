@@ -1,12 +1,11 @@
-
-import sys, getopt
-
 import matplotlib.pyplot as plt
 from dqn import DeepQNetwork
 from ddpg import DeepDeterministicPolicyGradient
 import numpy as np
+import sys, getopt
 import copy
 import pandas as pd
+import random
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -24,10 +23,12 @@ def cal_dist(source_cdf, target_cdf):
 
 def cal_reward(source_cdf, target_cdf):
     length = len(source_cdf)
+    gap = int(len(target_cdf) / length)
     max_err = 0.0
     for i in range(length):
-        if abs(source_cdf[i] - target_cdf[i]) > max_err:
-            max_err = abs(source_cdf[i] - target_cdf[i])
+        if abs(source_cdf[i] - target_cdf[i * gap]) > max_err:
+            max_err = abs(source_cdf[i] - target_cdf[i * gap])
+        
     return max_err
     # length = len(source_cdf)
     # res = 0.0
@@ -105,8 +106,7 @@ def choose_RL(name, length):
     return RL
 
 def train_sfc(RL, sfc, cdf, target_cdf):
-    # print("target_cdf", target_cdf)
-    iteration = 10000
+    iteration = 50000
     MEMORY_CAPACITY=10000
     step = 0
     min_dist = 1.0
@@ -144,9 +144,9 @@ def train_sfc(RL, sfc, cdf, target_cdf):
             RL.store_transition(np.array(sfc), action, reward, np.array(sfc1))
             reward = 0
             RL.store_transition(np.array(sfc), action, reward, np.array(sfc2))
-        if (step > MEMORY_CAPACITY) and (step % 10 == 0):
+        if (step > MEMORY_CAPACITY) and (step % 5 == 0):
             RL.learn()
-        temp_dist = cal_dist(source_cdf, target_cdf)
+        temp_dist = cal_reward(source_cdf, target_cdf)
         if temp_dist < min_dist:
             min_dist = temp_dist
             min_sfc = sfc_new
@@ -154,12 +154,6 @@ def train_sfc(RL, sfc, cdf, target_cdf):
             print(temp_dist)
             break
         sfc = sfc_new
-        # if step % 100 == 0:
-        #     print("min_dist", min_dist)
-        #     print("step", step)
-            # new_pdf, new_cdf = get_pdf_cdf_from_sfc(sfc)
-            # print("new_sfc", sfc)
-            # print("new_cdf", new_cdf)
         step += 1
     print(min_dist)
     return min_sfc, min_dist
@@ -210,78 +204,87 @@ def draw_cdf(source_cdfs, new_cdfs, target_cdfs, labels):
     plt.savefig("sfcs.png", format='png', bbox_inches='tight')
     plt.show()
 
-def run(file_name, method_name):
-    target_pdf, target_cdf = get_pdf_cdf(file_name)
-    length = len(target_cdf)
-    sfc = [1 for i in range(length)]
-    source_pdf, source_cdf = get_pdf_cdf_from_sfc(sfc)
-    new_sfc, min_dist = train_sfc(choose_RL(method_name, length), sfc, source_cdf, target_cdf)
+def run(bin_num, target_cdf, method_name):
+    sfc = [1 for i in range(bin_num)]
+    source_cdf = [float(i+1)/bin_num for i in range(bin_num)]
+    new_sfc, min_dist = train_sfc(choose_RL(method_name, bin_num), sfc, source_cdf, target_cdf)
     new_pdf, new_cdf = get_pdf_cdf_from_sfc(new_sfc)
-    # print("new_cdf", new_cdf)
-    # print("new_sfc", new_sfc)
     return source_cdf, new_cdf, target_cdf, min_dist, new_sfc
 
-def write_SFC(bit_num, sfc, cdf):
-    all_fo = open("/home/liuguanli/Documents/pre_train/sfc_z/bit_num_" + str(bit_num) + ".csv", "w")
+
+def write_SFC(name, bit_num, sfc, cdf):
+    all_fo = open("/home/liuguanli/Documents/pre_train/sfc_z/" + name, "w")
     num = len(sfc)
     for i in range(num):
         all_fo.write(str(sfc[i]) + "," + str(cdf[i]) + "\n")
     all_fo.close()
 
+def get_locations_via_zvalue(bit_num, z_value):
+    x = 0
+    y = 0
+    for i in range(bit_num):
+        xSeed = 1 << (2 * i + 0)
+        ySeed = 1 << (2 * i + 1)
+
+        if z_value & xSeed > 0:
+            x += pow(2, i)
+        if z_value & ySeed > 0:
+            y += pow(2, i)
+    return x, y
+
+def write_SFC_2d(name, bit_num, sfc, cdf):
+    all_fo = open(name, "w")
+    num = len(sfc)
+    side = pow(2, bit_num)
+    gap = 1.0 / side
+    points_num = 10
+    for i in range(num):
+        if sfc[i] == 0:
+            continue
+        x, y = get_locations_via_zvalue(bit_num, i)
+        for j in range(points_num):
+            all_fo.write(str(random.uniform(x * gap, (x + 1) * gap)) + "," + str(random.uniform(y * gap, (y + 1) * gap)) + "," + str(cdf[i]) + "\n")
+    all_fo.close()
+
 def parser(argv):
     try:
-        opts, args = getopt.getopt(argv, "d:b:f:")
+        opts, args = getopt.getopt(argv, "i:o:b:")
     except getopt.GetoptError:
         sys.exit(2)
     for opt, arg in opts:
-        if opt == '-d':
-            database = arg
+        if opt == '-i':
+            input_file = arg
+        elif opt == '-o':
+            output_file = arg
         elif opt == '-b':
-            bit_num = int(arg)
-        elif opt == '-f':
-            filename = arg
-    return database, bit_num, filename
-    
-def run_demo(method_name = 'ddpg'):
-    # target_pdf, target_cdf = get_pdf_cdf(file_name)
-    target_cdf = [
-    1/16,1/16,1/16,1/16,1/16,1/16,2/16,2/16,2/16,3/16,3/16,3/16,4/16,5/16,5/16,5/16,5/16,
-    5/16,5/16,5/16,5/16,5/16,5/16,5/16,5/16,5/16,5/16,5/16,6/16,6/16,6/16,7/16,7/16,7/16,
-    8/16,8/16,8/16,8/16,9/16,10/16,11/16,11/16,11/16,11/16,11/16,11/16,11/16,11/16,11/16,
-    12/16,12/16,12/16,12/16,12/16,12/16,12/16,12/16,12/16,13/16,13/16,14/16,14/16,15/16,16/16]
-    target_pdf = []
-    length = len(target_cdf)
-    sfc = [1 for i in range(length)]
-    source_pdf, source_cdf = get_pdf_cdf_from_sfc(sfc)
-    new_sfc, min_dist = train_sfc(choose_RL(method_name, length), sfc, source_cdf, target_cdf)
-    new_pdf, new_cdf = get_pdf_cdf_from_sfc(new_sfc)
-    print("new_sfc", new_sfc)
-    print("new_cdf", new_cdf)
-    return source_cdf, new_cdf, target_cdf, min_dist, new_sfc
+            bin_num = int(arg)
 
-def run_exp(parameters):
-    database, bit_num, file_name_pattern = parser(parameters)
-    # distribution, size, skewness, dim, bit_num, file_name_pattern = parser(parameters)
+    return input_file, output_file, bin_num
+
+if __name__ == "__main__":
+    input_file, output_file, bin_num = parser(sys.argv[1:])
+
     source_cdfs = []
     new_cdfs = []
     target_cdfs = []
     labels = []
     # bit_nums = [6, 8, 10]
-    bit_nums = [6]
+    # bit_nums = [6]
     # method_names = ['dqn', 'ddpg']
     method_names = ['dqn']
-    for bit_num in bit_nums:
-        for method_name in method_names:
-            source_cdf, new_cdf, target_cdf, min_dist, new_sfc = run(file_name_pattern % (bit_num, database), method_name)
-            write_SFC(bit_num, new_sfc, new_cdf)
-            source_cdfs.append(source_cdf)
-            new_cdfs.append(new_cdf)
-            target_cdfs.append(target_cdf)
-            labels.append(method_name + "-" + str(pow(2, bit_num)) + " cells    dist=" + str(min_dist))
+    # for bit_num in bit_nums:
+    for method_name in method_names:
+
+        target_pdf, target_cdf = get_pdf_cdf(input_file)
+        source_cdf, new_cdf, target_cdf, min_dist, new_sfc = run(bin_num, target_cdf, method_name)
+        print(target_cdf)
+        print(new_cdf)
+
+        bit_num_map={64:3, 256:4, 1024:5}
+        write_SFC_2d(output_file, bit_num_map[bin_num], new_sfc, new_cdf)
+        source_cdfs.append(source_cdf)
+        new_cdfs.append(new_cdf)
+        target_cdfs.append(target_cdf)
+        labels.append(method_name + "-" + str(bin_num) + " cells    dist=" + str(min_dist))
     # draw_cdf(source_cdfs, new_cdfs, target_cdfs, labels)
     # draw_cdf_8t8(source_cdfs, new_cdfs, target_cdfs, labels)
-
-if __name__ == "__main__":
-    run_exp(sys.argv[1:])
-    # run_demo()
-    # python /home/liuguanli/Dropbox/shared/VLDB20/codes/rsmi/pre_train/rl_4_sfc/RL_4_SFC.py -d uniform -s 64000000 -n 1 -m 2 -b 6 -f /home/liuguanli/Documents/pre_train/sfc_z_weight/bit_num_%d/%s_%d_%d_%d_.csv

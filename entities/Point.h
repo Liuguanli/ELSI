@@ -1,7 +1,7 @@
 #ifndef POINT_H
 #define POINT_H
 #include <vector>
-#include <string.h>
+// #include <string.h>
 #include <string>
 #include <math.h>
 
@@ -12,15 +12,18 @@ public:
     //  For ZM-index
     float x = 0.0;
     float y = 0.0;
+    int x_i;
+    int y_i;
     long long curve_val;
     float label;
     int index = 0;
     float normalized_key;
     double temp_dist;
 
-    // For ML-index
+    // For ML-index and LISA
     int partition_id;
-    float key;
+    double key;
+    double normalized_ml_key;
 
     Point()
     {
@@ -45,16 +48,16 @@ public:
         return false;
     }
 
+    // string get_self()
+    // {
+    //     return to_string(x) + "," + to_string(y) + "\n";
+    // }
+
     double cal_dist(Point point)
     {
         temp_dist = sqrt(pow((point.x - x), 2) + pow((point.y - y), 2));
         return temp_dist;
     }
-
-    // string get_self()
-    // {
-    //     return to_string(x) + "," + to_string(y) + "\n";
-    // }
 };
 
 #endif

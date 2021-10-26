@@ -43,6 +43,8 @@ template <typename D, typename T>
 class ELSI
 {
 public:
+    string index_name = "";
+    int dimension = 1;
     int status = -1;
     std::shared_ptr<MLP> query_cost_model = std::make_shared<MLP>(8, 32);
     std::shared_ptr<MLP> build_cost_model = std::make_shared<MLP>(8, 32);
@@ -63,17 +65,18 @@ public:
     // vector<ExtraStorageBlock<D>> extra_storage;
     vector<D> extra_storage;
 
-    void config_method_pool(string index_name)
+    void config_method_pool()
     {
+
         methods.insert(pair<int, vector<float>>(0, {1, 0, 0, 0, 0, 0}));
         methods.insert(pair<int, vector<float>>(1, {0, 1, 0, 0, 0, 0}));
         methods.insert(pair<int, vector<float>>(2, {0, 0, 1, 0, 0, 0}));
         methods.insert(pair<int, vector<float>>(5, {0, 0, 0, 0, 0, 1}));
-        if (index_name != "LISA")
-        {
-            methods.insert(pair<int, vector<float>>(3, {0, 0, 0, 1, 0, 0}));
-            methods.insert(pair<int, vector<float>>(4, {0, 0, 0, 0, 1, 0}));
-        }
+        // if (index_name != "LISA")
+        // {
+        // }
+        methods.insert(pair<int, vector<float>>(3, {0, 0, 0, 1, 0, 0}));
+        methods.insert(pair<int, vector<float>>(4, {0, 0, 0, 0, 1, 0}));
     }
 
     void init()
@@ -82,7 +85,7 @@ public:
         print("ELSI::init ELSI");
         init_build_processor();
         init_rebuild_processor();
-        MR<D, T>::load_pre_trained_model();
+        MR<D, T>::load_pre_trained_model(dimension);
         status = Constants::STATUS_FRAMEWORK_INIT_DONE;
     }
 
@@ -124,30 +127,70 @@ public:
 
     std::shared_ptr<MLP> build_with_method(DataSet<D, T> &original_data_set, int method_index)
     {
-        DataSetInfo<T> info(Constants::DEFAULT_BIN_NUM, original_data_set.keys);
         DataSet<D, T> shrinked_data_set;
         switch (method_index)
         {
         case Constants::CL:
             CL<D, T> cl;
-            shrinked_data_set = cl.do_cl(original_data_set, config::cluster_k);
+            shrinked_data_set = cl.do_cl(original_data_set, config::cluster_k, dimension);
             break;
         case Constants::MR:
             MR<D, T> mr;
             {
-                string model_path = Constants::DEFAULT_PRE_TRAIN_MODEL_PATH;
-                if (mr.is_reusable(info, model_path))
-                {
-                    // TODO here the input is 1,  net is for model reuse
-                    auto net = std::make_shared<MLP>(1);
-#ifdef use_gpu
-                    net->to(torch::kCUDA);
-#endif
-                    // cout << "model_path" << model_path << endl;
-                    torch::load(net, model_path);
-                    net->get_parameters_ZM();
+                DataSetInfo<T> info(Constants::DEFAULT_BIN_NUM, original_data_set.keys);
 
-                    return net;
+                if (dimension == 1)
+                {
+                    string model_path = Constants::DEFAULT_PRE_TRAIN_MODEL_PATH;
+                    if (mr.is_reusable(info, model_path))
+                    {
+                        // TODO here the input is 1,  net is for model reuse
+                        auto net = std::make_shared<MLP>(dimension);
+#ifdef use_gpu
+                        net->to(torch::kCUDA);
+#endif
+                        torch::load(net, model_path);
+                        if (dimension == 1)
+                        {
+                            net->get_parameters_ZM();
+                        }
+                        return net;
+                    }
+                }
+                if (dimension == 2)
+                {
+                    string model_path = Constants::DEFAULT_PRE_TRAIN_MODEL_PATH_RSMI;
+                    if (original_data_set.points.size() > Constants::THRESHOLD)
+                    {
+                        if (mr.is_reusable_2d(info, model_path))
+                        {
+                            // TODO here the input is 1,  net is for model reuse
+                            auto net = std::make_shared<MLP>(dimension);
+#ifdef use_gpu
+                            net->to(torch::kCUDA);
+#endif
+                            // cout << "model_path: " << model_path << endl;
+                            torch::load(net, model_path);
+                            net->get_parameters();
+                            return net;
+                        }
+                    }
+                    else
+                    {
+                        model_path = Constants::DEFAULT_PRE_TRAIN_MODEL_PATH_RSMI_H;
+                        if (mr.is_reusable_2d_leafnode(info, model_path))
+                        {
+                            // TODO here the input is 1,  net is for model reuse
+                            auto net = std::make_shared<MLP>(dimension);
+#ifdef use_gpu
+                            net->to(torch::kCUDA);
+#endif
+                            // cout << "model_path: " << model_path << endl;
+                            torch::load(net, model_path);
+                            net->get_parameters();
+                            return net;
+                        }
+                    }
                 }
             }
             shrinked_data_set = original_data_set;
@@ -157,22 +200,21 @@ public:
             break;
         case Constants::RL:
             RL<D, T> rl;
-            shrinked_data_set = rl.do_rl(original_data_set, config::bit_num);
+            shrinked_data_set = rl.do_rl(original_data_set, config::bit_num, dimension);
             break;
         case Constants::RS:
             RS<T> rs;
-            shrinked_data_set = rs.do_rs(original_data_set, config::rs_m);
+            shrinked_data_set = rs.do_rs(original_data_set, config::rs_m, dimension);
             break;
         case Constants::SP:
             SP<D, T> sp;
-            shrinked_data_set = sp.do_sp(original_data_set, config::sampling_rate);
+            shrinked_data_set = sp.do_sp(original_data_set, config::sampling_rate, dimension);
             break;
         default:
             shrinked_data_set = original_data_set;
             break;
         }
-        auto mlp = model_training::real_train_1d(shrinked_data_set.normalized_keys, shrinked_data_set.labels);
-
+        auto mlp = model_training::real_train(shrinked_data_set.normalized_keys, shrinked_data_set.labels);
         status = Constants::STATUS_FRAMEWORK_BUILD_DONE;
         return mlp;
     }
@@ -183,19 +225,14 @@ public:
 
         if (query.is_point())
         {
-            print("point");
-
             point_query(query);
         }
         if (query.is_window())
         {
-            print("window");
-
             window_query(query);
         }
         if (query.is_knn())
         {
-            print("knn");
             knn_query(query);
         }
 
@@ -207,8 +244,8 @@ public:
         if (point_query_p != NULL)
         {
             print("point_query");
-
             point_query_p(query);
+            print("point_query finish");
         }
         // if (extra_storage.size() > 0)
         // {
@@ -267,7 +304,6 @@ public:
 
     bool is_rebuild(Statistics statistics)
     {
-        status = 11;
 #ifdef use_gpu
         torch::Tensor x = torch::tensor(statistics.get_input(), at::kCUDA).reshape({1, 5});
         rebuild_model->to(torch::kCUDA);
@@ -275,7 +311,6 @@ public:
         torch::Tensor x = torch::tensor(statistics.get_input()).reshape({1, 5});
 #endif
         bool is_rebuild = rebuild_model->predict(x).item().toFloat() >= 0.5;
-        status = 12;
         return false;
     }
 

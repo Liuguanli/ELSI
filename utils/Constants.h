@@ -125,13 +125,18 @@ public:
     static const string SFC_Z_COUNT;
     static const string FEATURES_PATH_ZM;
     static const string PRE_TRAIN_MODEL_PATH_ZM;
+    static const string PRE_TRAIN_MODEL_PATH_RSMI;
+    static const string PRE_TRAIN_2D_DATA;
+
     static const string DEFAULT_PRE_TRAIN_MODEL_PATH;
+    static const string DEFAULT_PRE_TRAIN_MODEL_PATH_RSMI;
+    static const string DEFAULT_PRE_TRAIN_MODEL_PATH_RSMI_H;
 
     static const string FEATURES_PATH_RSMI;
-    static const string PRE_TRAIN_MODEL_PATH_RSMI;
 
     static const string CLUSTER_FILE;
     static const string RL_FILE;
+    static const string RL_FILE_RSMI;
 
     static const string BUILD_TIME_MODEL_PATH;
     static const string QUERY_TIME_MODEL_PATH;

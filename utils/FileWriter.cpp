@@ -139,7 +139,7 @@ void FileWriter::write_build(ExpRecorder exp_recorder)
     ofstream write;
     string folder = Constants::RECORDS + Constants::BUILD;
     file_utils::check_dir(folder);
-    write.open((folder + exp_recorder.get_file_name() + ".txt"), ios::app);
+    write.open((folder + exp_recorder.name + "_" + exp_recorder.get_file_name() + ".txt"), ios::app);
     write << exp_recorder.get_point_query_result();
     write.close();
 }
@@ -149,7 +149,7 @@ void FileWriter::write_point_query(ExpRecorder exp_recorder)
     ofstream write;
     string folder = Constants::RECORDS + Constants::POINT;
     file_utils::check_dir(folder);
-    write.open((folder + exp_recorder.get_file_name() + ".txt"), ios::app);
+    write.open((folder + exp_recorder.name + "_" + exp_recorder.get_file_name() + ".txt"), ios::app);
     write << exp_recorder.get_point_query_result();
     write.close();
 }
@@ -159,8 +159,8 @@ void FileWriter::write_window_query(ExpRecorder exp_recorder)
     ofstream write;
     string folder = Constants::RECORDS + Constants::WINDOW;
     file_utils::check_dir(folder);
-    write.open((folder + exp_recorder.get_file_name() + ".txt"), ios::app);
-    write << exp_recorder.get_point_query_result();
+    write.open((folder + exp_recorder.name + "_" + exp_recorder.get_file_name() + ".txt"), ios::app);
+    write << exp_recorder.get_window_query_result();
     write.close();
 }
 
@@ -169,7 +169,7 @@ void FileWriter::write_kNN_query(ExpRecorder exp_recorder)
     ofstream write;
     string folder = Constants::RECORDS + Constants::KNN;
     file_utils::check_dir(folder);
-    write.open((folder + exp_recorder.get_file_name() + ".txt"), ios::app);
-    write << exp_recorder.get_point_query_result();
+    write.open((folder + exp_recorder.name + "_" + exp_recorder.get_file_name() + ".txt"), ios::app);
+    write << exp_recorder.get_knn_query_result();
     write.close();
 }

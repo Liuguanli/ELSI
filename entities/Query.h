@@ -40,6 +40,7 @@ public:
 
     Query *set_window_query()
     {
+        cout << "set_window_query" << endl;
         type = Constants::QUERY_TYPE_WINDOW;
         return this;
     }
@@ -47,7 +48,7 @@ public:
     Query *set_knn_query()
     {
         type = Constants::QUERY_TYPE_KNN;
-        return this;
+        return this;                                                                                    
     }
 
     Query *set_k(int k)

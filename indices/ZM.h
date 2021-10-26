@@ -380,7 +380,6 @@ namespace zm
         stage1[0] = dataset.points;
         records[0] = stage1;
 
-        exp_recorder.timer_begin();
         for (size_t i = 0; i < stages.size(); i++)
         {
             vector<std::shared_ptr<MLP>> temp_index;
@@ -413,6 +412,7 @@ namespace zm
                     method = framework.build_predict_method(exp_recorder.upper_level_lambda, query_frequency, original_data_set);
                 }
                 exp_recorder.record_method_nums(method);
+                method = Constants::SP;
                 // cout << "method: " << method << endl;
                 std::shared_ptr<MLP> mlp = framework.build_with_method(original_data_set, method);
 
@@ -436,8 +436,8 @@ namespace zm
                         int error = point.index - pos;
                         max_error = max(max_error, error);
                         min_error = min(min_error, error);
-                        mlp->max_error = max_error;
-                        mlp->min_error = min_error;
+                        // mlp->max_error = max_error;
+                        // mlp->min_error = min_error;
                         // cout << "min_error:" << min_error << " max_error:" << max_error << endl;
                     }
                     else
@@ -445,7 +445,11 @@ namespace zm
                         records[i + 1][pos].push_back(point);
                     }
                 }
-
+                if (is_last_level)
+                {
+                    mlp->max_error = max_error;
+                    mlp->min_error = min_error;
+                }
                 records[i][j].clear();
                 records[i][j].shrink_to_fit();
             }
@@ -464,7 +468,7 @@ namespace zm
         exp_recorder.timer_end();
         if (query.is_window())
         {
-            vector<Point> res;
+            long res = 0;
             cout << "window query size: " << query.results.size() << endl;
             for (size_t i = 0; i < query.query_windows.size(); i++)
             {
@@ -476,13 +480,14 @@ namespace zm
                         {
                             if (query.query_windows[i].contains(point))
                             {
-                                res.push_back(point);
+                                res++;
                             }
                         }
                     }
                 }
             }
-            exp_recorder.accuracy = (float)res.size() / query.results.size();
+            cout << "accurate window query size: " << res << endl;
+            exp_recorder.accuracy = (float)query.results.size() / res;
             cout << "accuracy: " << exp_recorder.accuracy << endl;
         }
         if (query.is_knn())
@@ -621,7 +626,9 @@ namespace zm
     {
         // dataset_name = _dataset_name;
         // generate_points();
+        exp_recorder.name = "ZM";
         exp_recorder.timer_begin();
+        framework.dimension = 1;
         framework.point_query_p = point_query;
         framework.window_query_p = window_query;
         framework.knn_query_p = kNN_query;
@@ -635,13 +642,12 @@ namespace zm
         DataSet<Point, long long>::mapping_pointer = mapping;
         DataSet<Point, long long>::save_data_pointer = save_data;
         stages.push_back(1);
-        framework.config_method_pool("ZM");
+        framework.index_name = "ZM";
+        framework.config_method_pool();
         if (exp_recorder.is_framework)
         {
             framework.init();
         }
-
-        stages.push_back(5000);
 
         exp_recorder.timer_end();
         print("framework init time:" + to_string((int)(exp_recorder.time / 1e9)) + "s");
@@ -656,10 +662,9 @@ namespace zm
         dataset.mapping();
         exp_recorder.timer_end();
         print("mapping data time:" + to_string((int)(exp_recorder.time / 1e9)) + "s");
-        exp_recorder.timer_begin();
 
         N = dataset.points.size();
-
+        // stages.push_back(N / Constants::THRESHOLD);
         init_underlying_data_storage(dataset);
         exp_recorder.timer_end();
         print("data init time:" + to_string((int)(exp_recorder.time / 1e9)) + "s");

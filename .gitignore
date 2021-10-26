@@ -15,8 +15,8 @@ data/*.csv
 Example.o
 Example
 
-indices/*
-!indices/ZM.h
+# indices/*
+# !indices/ZM.h
 files/*
 
 out.txt
