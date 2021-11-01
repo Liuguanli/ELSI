@@ -1,15 +1,18 @@
 ## BASE
 
 
-## Data Sets: https://drive.google.com/drive/folders/1d4VcGI5GVayqj40T2EL52bs3GOa2vcYt?usp=sharing
 
-(Due to the limitation of Google Drive, only OSM1 and Skewed are shared. If you need Uniform and OSM2, please email me.)
-
-## Pre-trained Models: 
-## 
 
 
 ##  How to use
+
+### 0. Download related data sets and models
+
+#### Data Sets: https://drive.google.com/drive/folders/1d4VcGI5GVayqj40T2EL52bs3GOa2vcYt?usp=sharing
+
+(Due to the limitation of Google Drive storage space, only OSM1 and Skewed are shared. If you need Uniform and OSM2, please email me.)
+
+#### Pre-trained Models: 
 
 ### 1. Required libraries
 
