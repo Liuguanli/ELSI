@@ -1,6 +1,15 @@
-## BASE
 
 
+```{r, engine='bash', count_lines}
+ ________  _____      ______   _____  
+|_   __  ||_   _|   .' ____ \ |_   _| 
+  | |_ \_|  | |     | (___ \_|  | |   
+  |  _| _   | |   _  _.____`.   | |   
+ _| |__/ | _| |__/ || \____) | _| |_  
+|________||________| \______.'|_____| 
+    
+```
+                                  
 
 
 
@@ -27,7 +36,7 @@ For GPU version, choose according to your setup.
 
 homepage: https://www.boost.org/
 
-#### 2. Change Makefile
+### 2. Change Makefile
 
 Choose CPU or GPU
 
@@ -48,7 +57,7 @@ else
 endif
 ```
 
-#### 3. Change Exp.cpp
+### 3. Change Exp.cpp
 
 comment *#define use_gpu* to use CPU version
 
@@ -61,7 +70,7 @@ comment *#define use_gpu* to use CPU version
 #endif  // use_gpu
 ```
 
-#### 4. Change path
+### 4. Change path
 Change */home/liuguanli/Dropbox/research/BASE/* to your own path for ELSI.
 
 Change */home/liuguanli/Documents/pre_train/* to the position where your store the pre-trained models.
@@ -76,7 +85,7 @@ const string Constants::RL_FILE = "/home/liuguanli/Dropbox/research/BASE/method_
 ```
 
 
-#### 5. TODO
+### 5. TODO
 - [x] Add data sets
 - [ ] Add pre-trained models
 - [ ] Add comments for key steps
