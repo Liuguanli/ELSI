@@ -21,8 +21,6 @@ private:
     int level;
     int index;
     long long N = 0;
-    int max_error = 0;
-    int min_error = 0;
 
     int bit_num;
 
@@ -32,13 +30,15 @@ private:
     long long side = 0;
 
 public:
+    int max_error = 0;
+    int min_error = 0;
     int leaf_node_num = 0;
     int width = 0;
     int max_partition_num = Constants::MAX_WIDTH;
 
     int page_size = Constants::PAGESIZE;
 
-    bool is_last;
+    bool is_last = false;
     float x_gap = 1.0;
     float x_scale = 1.0;
     float x_0 = 0;
@@ -228,7 +228,53 @@ public:
         }
     }
 
-    bool point_query(Point query_point)
+    bool point_query_bs(Point &query_point)
+    {
+        // cout << "query_point.curve: " << query_point.curve_val << endl;
+        int predicted_index = 0;
+        float x1 = (query_point.x - x_0) * x_scale + x_0;
+        float x2 = (query_point.y - y_0) * y_scale + y_0;
+        predicted_index = mlp->predict(x1, x2) * leaf_node_num;
+
+        predicted_index = predicted_index < 0 ? 0 : predicted_index;
+        predicted_index = predicted_index >= leaf_node_num ? leaf_node_num - 1 : predicted_index;
+        int front = predicted_index + min_error;
+        front = front < 0 ? 0 : front;
+        int back = predicted_index + max_error;
+        back = back >= leaf_node_num ? leaf_node_num - 1 : back;
+        while (front <= back)
+        {
+            int mid = (front + back) / 2;
+            long long first_curve_val = leafnodes[mid].children[0].curve_val;
+            long long last_curve_val = leafnodes[mid].children[leafnodes[mid].children.size() - 1].curve_val;
+
+            if (first_curve_val <= query_point.curve_val && query_point.curve_val <= last_curve_val)
+            {
+                vector<Point>::iterator iter = find(leafnodes[mid].children.begin(), leafnodes[mid].children.end(), query_point);
+                if (iter == leafnodes[mid].children.end())
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            else
+            {
+                if (leafnodes[mid].children[0].curve_val < query_point.curve_val)
+                {
+                    front = mid + 1;
+                }
+                else
+                {
+                    back = mid - 1;
+                }
+            }
+        }
+    }
+
+    bool point_query(Point &query_point)
     {
         if (is_last)
         {
@@ -243,31 +289,26 @@ public:
             // predicted_index = (int)(net->predict(query_point, x_scale, y_scale, x_0, y_0) * width);
             // predicted_index = net->predict(query_point, x_scale, y_scale, x_0, y_0) * width;
             predicted_index = mlp->predict(x1, x2) * leaf_node_num;
-            cout << "predicted_index: " << predicted_index << endl;
-
-            cout << "leafnodes.size(): " << leafnodes.size() << endl;
 
             predicted_index = predicted_index < 0 ? 0 : predicted_index;
             predicted_index = predicted_index >= leaf_node_num ? leaf_node_num - 1 : predicted_index;
-            LeafNode leafnode = leafnodes[predicted_index];
+            // LeafNode leafnode = leafnodes[predicted_index];
 
-            if (leafnode.mbr.contains(query_point))
+            if (leafnodes[predicted_index].mbr.contains(query_point))
             {
-                vector<Point>::iterator iter = find(leafnode.children.begin(), leafnode.children.end(), query_point);
-                if (iter != leafnode.children.end())
+                vector<Point>::iterator iter = find(leafnodes[predicted_index].children.begin(), leafnodes[predicted_index].children.end(), query_point);
+                if (iter != leafnodes[predicted_index].children.end())
                 {
                     // cout<< "find it" << endl;
                     return true;
                 }
             }
-            cout << "here 1: " << endl;
 
             // predicted result is not correct
             int front = predicted_index + min_error;
             front = front < 0 ? 0 : front;
             int back = predicted_index + max_error;
             back = back >= leafnodes.size() ? leafnodes.size() - 1 : back;
-            cout << "here 2: " << endl;
 
             int gap = 1;
             int predicted_index_left = predicted_index - gap;
@@ -275,11 +316,11 @@ public:
             while (predicted_index_left >= front && predicted_index_right <= back)
             {
                 // search left
-                LeafNode leafnode = leafnodes[predicted_index_left];
-                if (leafnode.mbr.contains(query_point))
+                // LeafNode leafnode = leafnodes[predicted_index_left];
+                if (leafnodes[predicted_index_left].mbr.contains(query_point))
                 {
-                    vector<Point>::iterator iter = find(leafnode.children.begin(), leafnode.children.end(), query_point);
-                    if (iter != leafnode.children.end())
+                    vector<Point>::iterator iter = find(leafnodes[predicted_index_left].children.begin(), leafnodes[predicted_index_left].children.end(), query_point);
+                    if (iter != leafnodes[predicted_index_left].children.end())
                     {
                         // cout<< "find it" << endl;
                         return true;
@@ -287,11 +328,11 @@ public:
                 }
 
                 // search right
-                leafnode = leafnodes[predicted_index_right];
-                if (leafnode.mbr.contains(query_point))
+                // leafnode = leafnodes[predicted_index_right];
+                if (leafnodes[predicted_index_right].mbr.contains(query_point))
                 {
-                    vector<Point>::iterator iter = find(leafnode.children.begin(), leafnode.children.end(), query_point);
-                    if (iter != leafnode.children.end())
+                    vector<Point>::iterator iter = find(leafnodes[predicted_index_right].children.begin(), leafnodes[predicted_index_right].children.end(), query_point);
+                    if (iter != leafnodes[predicted_index_right].children.end())
                     {
                         // cout<< "find it" << endl;
                         return true;
@@ -301,15 +342,14 @@ public:
                 predicted_index_left = predicted_index - gap;
                 predicted_index_right = predicted_index + gap;
             }
-            cout << "here 3: " << endl;
 
             while (predicted_index_left >= front)
             {
-                LeafNode leafnode = leafnodes[predicted_index_left];
-                if (leafnode.mbr.contains(query_point))
+                // LeafNode leafnode = leafnodes[predicted_index_left];
+                if (leafnodes[predicted_index_left].mbr.contains(query_point))
                 {
-                    vector<Point>::iterator iter = find(leafnode.children.begin(), leafnode.children.end(), query_point);
-                    if (iter != leafnode.children.end())
+                    vector<Point>::iterator iter = find(leafnodes[predicted_index_left].children.begin(), leafnodes[predicted_index_left].children.end(), query_point);
+                    if (iter != leafnodes[predicted_index_left].children.end())
                     {
                         // cout<< "find it" << endl;
                         return true;
@@ -318,16 +358,14 @@ public:
                 gap++;
                 predicted_index_left = predicted_index - gap;
             }
-            cout << "here 4: " << endl;
 
             while (predicted_index_right <= back)
             {
-                LeafNode leafnode = leafnodes[predicted_index_right];
-
-                if (leafnode.mbr.contains(query_point))
+                // LeafNode leafnode = leafnodes[predicted_index_right];
+                if (leafnodes[predicted_index_right].mbr.contains(query_point))
                 {
-                    vector<Point>::iterator iter = find(leafnode.children.begin(), leafnode.children.end(), query_point);
-                    if (iter != leafnode.children.end())
+                    vector<Point>::iterator iter = find(leafnodes[predicted_index_right].children.begin(), leafnodes[predicted_index_right].children.end(), query_point);
+                    if (iter != leafnodes[predicted_index_right].children.end())
                     {
                         // cout<< "find it" << endl;
                         return true;

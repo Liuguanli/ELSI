@@ -45,8 +45,8 @@ public:
         this->points = points;
         for (size_t i = 0; i < points.size(); i++)
         {
-            keys.push_back(points[i].key);
-            // keys.push_back(points[i].curve_val);
+            // keys.push_back(points[i].key);
+            keys.push_back(points[i].curve_val);
             labels.push_back(points[i].label);
             normalized_keys.push_back(points[i].normalized_key);
         }

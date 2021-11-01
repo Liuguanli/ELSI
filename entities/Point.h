@@ -14,7 +14,7 @@ public:
     float y = 0.0;
     int x_i;
     int y_i;
-    long long curve_val;
+    long long curve_val = 0;
     float label;
     int index = 0;
     float normalized_key;

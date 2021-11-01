@@ -162,6 +162,43 @@ namespace zm
         return predicted_index;
     }
 
+    bool point_query(Point &query_point)
+    {
+        long front = 0, back = 0;
+        int predicted_index = get_point_index(query_point, front, back);
+        while (front <= back)
+        {
+            int mid = (front + back) / 2;
+            long long first_curve_val = storage_leafnodes[mid].children[0].curve_val;
+            long long last_curve_val = storage_leafnodes[mid].children[storage_leafnodes[mid].children.size() - 1].curve_val;
+
+            if (first_curve_val <= query_point.curve_val && query_point.curve_val <= last_curve_val)
+            {
+                vector<Point>::iterator iter = find(storage_leafnodes[mid].children.begin(), storage_leafnodes[mid].children.end(), query_point);
+                if (iter == storage_leafnodes[mid].children.end())
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            else
+            {
+                if (storage_leafnodes[mid].children[0].curve_val < query_point.curve_val)
+                {
+                    front = mid + 1;
+                }
+                else
+                {
+                    back = mid - 1;
+                }
+            }
+        }
+        return false;
+    }
+
     void point_query(Query<Point> &query)
     {
         int point_not_found = 0;
@@ -169,35 +206,9 @@ namespace zm
         int query_num = query_points.size();
         for (size_t i = 0; i < query_num; i++)
         {
-            long front = 0, back = 0;
-            int predicted_index = get_point_index(query_points[i], front, back);
-            while (front <= back)
+            if (!point_query(query.query_points[i]))
             {
-                int mid = (front + back) / 2;
-                long long first_curve_val = storage_leafnodes[mid].children[0].curve_val;
-                long long last_curve_val = storage_leafnodes[mid].children[storage_leafnodes[mid].children.size() - 1].curve_val;
-                // cout << "first_curve_val: " << first_curve_val << " last_curve_val: " << last_curve_val << endl;
-
-                if (first_curve_val <= query_points[i].curve_val && query_points[i].curve_val <= last_curve_val)
-                {
-                    vector<Point>::iterator iter = find(storage_leafnodes[mid].children.begin(), storage_leafnodes[mid].children.end(), query_points[i]);
-                    if (iter == storage_leafnodes[mid].children.end())
-                    {
-                        point_not_found++;
-                    }
-                    break;
-                }
-                else
-                {
-                    if (storage_leafnodes[mid].children[0].curve_val < query_points[i].curve_val)
-                    {
-                        front = mid + 1;
-                    }
-                    else
-                    {
-                        back = mid - 1;
-                    }
-                }
+                point_not_found++;
             }
         }
         cout << "point_not_found: " << point_not_found << endl;
@@ -412,7 +423,7 @@ namespace zm
                     method = framework.build_predict_method(exp_recorder.upper_level_lambda, query_frequency, original_data_set);
                 }
                 exp_recorder.record_method_nums(method);
-                method = Constants::SP;
+                method = Constants::CL;
                 // cout << "method: " << method << endl;
                 std::shared_ptr<MLP> mlp = framework.build_with_method(original_data_set, method);
 
@@ -449,6 +460,7 @@ namespace zm
                 {
                     mlp->max_error = max_error;
                     mlp->min_error = min_error;
+                    cout << "min_error:" << min_error << " max_error:" << max_error << endl;
                 }
                 records[i][j].clear();
                 records[i][j].shrink_to_fit();

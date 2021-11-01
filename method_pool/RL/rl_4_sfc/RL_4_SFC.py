@@ -127,7 +127,7 @@ def train_sfc(RL, sfc, cdf, target_cdf):
 
         if sfc[action] == 0:
             if dist1 < dist2:
-                reward = -0.1 # TODO change this -0.001
+                reward = -0.1 
                 sfc_new = sfc1
             else:
                 reward = dist1 - dist2

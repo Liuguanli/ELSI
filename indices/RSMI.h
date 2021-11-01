@@ -125,9 +125,14 @@ namespace rsmi
         int query_num = query_points.size();
         for (size_t i = 0; i < query_num; i++)
         {
-            if (!root.point_query(query_points[i]))
+            // if (!root.point_query(query_points[i]))
+            if (!root.point_query_bs(query_points[i]))
             {
                 point_not_found++;
+                // cout << "i: " << i << endl;
+                // cout << "query_points[i].x: " << query_points[i].x << ","
+                //      << "query_points[i].y: " << query_points[i].y << endl;
+                // break;
             }
         }
         cout << "point_not_found: " << point_not_found << endl;
@@ -141,18 +146,28 @@ namespace rsmi
     {
     }
 
-    void build_single_RSMI(DataSet<Point, long long> dataset, int method)
+    Partition build_single_RSMI(ExpRecorder &exp_recorder, DataSet<Point, long long> &dataset)
     {
         Partition partition;
+        DataSet<Point, long long> original_data_set;
         vector<float> locations;
         vector<float> labels;
         vector<long long> keys;
         partition.is_last = true;
         partition.init_last(dataset.points, locations, labels, keys);
-        dataset.normalized_keys = locations;
-        dataset.labels = labels;
+        int method = exp_recorder.build_method;
+        original_data_set.points = dataset.points;
+        original_data_set.normalized_keys = locations;
+        original_data_set.keys = keys;
+        original_data_set.labels = labels;
+        // if (exp_recorder.is_framework)
+        // {
+        //     method = framework.build_predict_method(exp_recorder.upper_level_lambda, query_frequency, original_data_set);
+        // }
 
-        std::shared_ptr<MLP> mlp = framework.build_with_method(dataset, method);
+        exp_recorder.record_method_nums(method);
+
+        std::shared_ptr<MLP> mlp = framework.build_with_method(original_data_set, method);
         int max_error = 0;
         int min_error = 0;
         for (size_t i = 0; i < dataset.points.size(); i++)
@@ -160,6 +175,7 @@ namespace rsmi
             float x1 = (dataset.points[i].x - partition.x_0) * partition.x_scale + partition.x_0;
             float x2 = (dataset.points[i].y - partition.y_0) * partition.y_scale + partition.y_0;
             int predicted_index = (int)(mlp->predict(x1, x2) * partition.leaf_node_num);
+
             predicted_index = max(predicted_index, 0);
             predicted_index = min(predicted_index, partition.leaf_node_num - 1);
 
@@ -169,7 +185,11 @@ namespace rsmi
         }
         mlp->max_error = max_error;
         mlp->min_error = min_error;
+        partition.max_error = max_error;
+        partition.min_error = min_error;
         partition.mlp = mlp;
+        cout << "min_error: " << min_error << " max_error:" << max_error << endl;
+        return partition;
     }
 
     Partition build_RSMI(ExpRecorder &exp_recorder, vector<Point> points)
@@ -189,10 +209,10 @@ namespace rsmi
             original_data_set.normalized_keys = locations;
             original_data_set.keys = keys;
             original_data_set.labels = labels;
-            if (exp_recorder.is_framework)
-            {
-                method = framework.build_predict_method(exp_recorder.upper_level_lambda, query_frequency, original_data_set);
-            }
+            // if (exp_recorder.is_framework)
+            // {
+            //     method = framework.build_predict_method(exp_recorder.upper_level_lambda, query_frequency, original_data_set);
+            // }
 
             exp_recorder.record_method_nums(method);
 
@@ -204,6 +224,7 @@ namespace rsmi
                 float x1 = (points[i].x - partition.x_0) * partition.x_scale + partition.x_0;
                 float x2 = (points[i].y - partition.y_0) * partition.y_scale + partition.y_0;
                 int predicted_index = (int)(mlp->predict(x1, x2) * partition.leaf_node_num);
+
                 predicted_index = max(predicted_index, 0);
                 predicted_index = min(predicted_index, partition.leaf_node_num - 1);
 
@@ -213,10 +234,13 @@ namespace rsmi
             }
             mlp->max_error = max_error;
             mlp->min_error = min_error;
+            partition.max_error = max_error;
+            partition.min_error = min_error;
             partition.mlp = mlp;
         }
         else
         {
+            // partition.is_last = false;
             partition.init(points, locations, labels, keys);
             map<int, vector<Point>> points_map;
             original_data_set.points = points;
@@ -225,10 +249,10 @@ namespace rsmi
             original_data_set.labels = labels;
 
             int method = exp_recorder.build_method;
-            if (exp_recorder.is_framework)
-            {
-                method = framework.build_predict_method(exp_recorder.upper_level_lambda, query_frequency, original_data_set);
-            }
+            // if (exp_recorder.is_framework)
+            // {
+            //     method = framework.build_predict_method(exp_recorder.upper_level_lambda, query_frequency, original_data_set);
+            // }
             exp_recorder.record_method_nums(method);
 
             std::shared_ptr<MLP> mlp = framework.build_with_method(original_data_set, method);
@@ -336,7 +360,7 @@ namespace rsmi
         framework.point_query_p = point_query;
         // framework.window_query_p = window_query;
         // framework.knn_query_p = kNN_query;
-        framework.build_index_p = build_single_RSMI;
+        // framework.build_index_p = build_single_RSMI;
         // framework.init_storage_p = init_underlying_data_storage;
         // framework.insert_p = insert;
         // framework.generate_points_p = generate_points;

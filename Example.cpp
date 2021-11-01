@@ -165,22 +165,22 @@ void test_ZM(ExpRecorder &exp_recorder)
     exp_recorder.time /= 1e9;
     file_writer.write_build(exp_recorder);
 
-    Query<Point> query;
-    long N = zm::dataset.points.size();
-    cout << "query num:" << N << endl;
-    query.set_point_query()->query_points = zm::dataset.points;
-    // ->set_query_points(zm::dataset.points);
-    zm::query(query, exp_recorder);
-    exp_recorder.time /= N;
-    cout << "query time:" << exp_recorder.time << endl;
-    file_writer.write_point_query(exp_recorder);
+    // Query<Point> query;
+    // long N = zm::dataset.points.size();
+    // cout << "query num:" << N << endl;
+    // query.set_point_query()->query_points = zm::dataset.points;
+    // // ->set_query_points(zm::dataset.points);
+    // zm::query(query, exp_recorder);
+    // exp_recorder.time /= N;
+    // cout << "query time:" << exp_recorder.time << endl;
+    // file_writer.write_point_query(exp_recorder);
 
-    vector<Mbr> mbrs = mbrs_map[to_string(areas[2]) + to_string(ratios[2])];
-    query.set_window_query()->query_windows = mbrs;
-    // ->set_query_windows(mbrs);
-    zm::query(query, exp_recorder);
-    exp_recorder.time /= query_num;
-    file_writer.write_window_query(exp_recorder);
+    // vector<Mbr> mbrs = mbrs_map[to_string(areas[2]) + to_string(ratios[2])];
+    // query.set_window_query()->query_windows = mbrs;
+    // // ->set_query_windows(mbrs);
+    // zm::query(query, exp_recorder);
+    // exp_recorder.time /= query_num;
+    // file_writer.write_window_query(exp_recorder);
 
     // vector<Point> knn_query_points;
     // for (int i = 0; i < query_num; i++)
@@ -240,8 +240,10 @@ void test_RSMI(ExpRecorder &exp_recorder)
     print("dataset_name:" + dataset_name);
     FileWriter file_writer;
 
+    exp_recorder.build_method = Constants::CL;
     rsmi::init(dataset_name, exp_recorder);
-    rsmi::root = rsmi::build_RSMI(exp_recorder, rsmi::dataset.points);
+    rsmi::root = rsmi::build_single_RSMI(exp_recorder, rsmi::dataset);
+    // rsmi::root = rsmi::build_RSMI(exp_recorder, rsmi::dataset.points);
     exp_recorder.timer_end();
     exp_recorder.time /= 1e9;
     print("build time:" + to_string(exp_recorder.time) + " s");

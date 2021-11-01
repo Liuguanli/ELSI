@@ -114,15 +114,9 @@ public:
 
     static const string LEARNED_CDF;
 
-    static const string TORCH_MODELS;
-    static const string TORCH_MODELS_ZM;
 
-    static const string PRE_TRAIN_DATA;
     static const string PRE_TRAIN_1D_DATA;
 
-    static const string SYNTHETIC_SFC_Z;
-    static const string SFC_Z_WEIGHT;
-    static const string SFC_Z_COUNT;
     static const string FEATURES_PATH_ZM;
     static const string PRE_TRAIN_MODEL_PATH_ZM;
     static const string PRE_TRAIN_MODEL_PATH_RSMI;

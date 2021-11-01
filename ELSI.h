@@ -406,16 +406,130 @@ private:
             FileWriter writer;
             writer.write_score_items(records, raw_data_path);
 
-            // save
 #ifdef use_gpu
             query_cost_model->to(torch::kCUDA);
             build_cost_model->to(torch::kCUDA);
 #endif
-            build_cost_model->train_model(parameters, build_time_labels);
-            query_cost_model->train_model(parameters, query_time_labels);
+
+            // build_cost_model->train_model(parameters, build_time_labels);
+            // query_cost_model->train_model(parameters, query_time_labels);
+
+            // torch::save(build_cost_model, build_time_model_path);
+            // torch::save(query_cost_model, query_time_model_path);
+
+            // TODO use k-fold!!!
+            // TODO   2 define k 3 save the model with the heighest score
+            int k = 5;
+            int parameter_gap = parameters.size() / k;
+            int label_gap = build_time_labels.size() / k;
+            float loss = numeric_limits<float>::max();
+
+            vector<vector<float>> all_parameters;
+            vector<vector<float>> all_build_time_labels;
+            vector<vector<float>> all_query_time_labels;
+
+            for (size_t i = 0; i < k; i++)
+            {
+                vector<float> parameters_temp(parameters.begin() + parameter_gap * i, parameters.end() + parameter_gap * i + parameter_gap);
+                vector<float> build_time_labels_temp(build_time_labels.begin() + label_gap * i, build_time_labels.end() + label_gap * i + label_gap);
+                vector<float> query_time_labels_temp(query_time_labels.begin() + label_gap * i, query_time_labels.end() + label_gap * i + label_gap);
+                all_parameters.push_back(parameters_temp);
+                all_build_time_labels.push_back(build_time_labels_temp);
+                all_query_time_labels.push_back(query_time_labels_temp);
+            }
+
+            for (size_t i = 0; i < k; i++)
+            {
+
+                vector<float> train_parameters;
+                vector<float> test_parameters;
+
+                vector<float> train_build_time_labels;
+                vector<float> test_build_time_labels;
+
+                for (size_t j = 0; j < k; j++)
+                {
+                    if (i == j)
+                    {
+                        test_parameters = all_parameters[i];
+                        test_build_time_labels = all_build_time_labels[i];
+                    }
+                    else
+                    {
+                        train_parameters.insert(train_parameters.end(), all_parameters[i].begin(), all_parameters[i].end());
+                        train_build_time_labels.insert(train_build_time_labels.end(), all_build_time_labels[i].begin(), all_build_time_labels[i].end());
+                    }
+                }
+                std::shared_ptr<MLP> build_cost_model_temp = std::make_shared<MLP>(8, 32);
+                build_cost_model_temp->train_model(train_parameters, train_build_time_labels);
+
+                float temp_loss = 0;
+                for (size_t j = 0; j < label_gap; j++)
+                {
+                    vector<float> temp(test_parameters.begin() + 8 * j, test_parameters.begin() + 8 * j + 8);
+#ifdef use_gpu
+                    torch::Tensor x = torch::tensor(temp, at::kCUDA).reshape({1, 8});
+                    build_cost_model_temp->to(torch::kCUDA);
+#else
+                    torch::Tensor x = torch::tensor(temp).reshape({1, 8});
+#endif
+                    float res = build_cost_model_temp->predict(x).item().toFloat();
+                    temp_loss += abs(res - test_build_time_labels[j]);
+                }
+                if (temp_loss < loss)
+                {
+                    loss = temp_loss;
+                    build_cost_model = build_cost_model_temp;
+                }
+            }
             torch::save(build_cost_model, build_time_model_path);
+
+            loss = 0;
+            for (size_t i = 0; i < k; i++)
+            {
+
+                vector<float> train_parameters;
+                vector<float> test_parameters;
+
+                vector<float> train_query_time_labels;
+                vector<float> test_query_time_labels;
+
+                for (size_t j = 0; j < k; j++)
+                {
+                    if (i == j)
+                    {
+                        test_parameters = all_parameters[i];
+                        test_query_time_labels = all_query_time_labels[i];
+                    }
+                    else
+                    {
+                        train_parameters.insert(train_parameters.end(), all_parameters[i].begin(), all_parameters[i].end());
+                        train_query_time_labels.insert(train_query_time_labels.end(), all_query_time_labels[i].begin(), all_query_time_labels[i].end());
+                    }
+                }
+                std::shared_ptr<MLP> query_cost_model_temp = std::make_shared<MLP>(8, 32);
+                query_cost_model_temp->train_model(train_parameters, train_query_time_labels);
+
+                float temp_loss = 0;
+                for (size_t j = 0; j < label_gap; j++)
+                {
+                    vector<float> temp(test_parameters.begin() + 8 * j, test_parameters.begin() + 8 * j + 8);
+#ifdef use_gpu
+                    torch::Tensor x = torch::tensor(temp, at::kCUDA).reshape({1, 8});
+                    query_cost_model_temp->to(torch::kCUDA);
+#else
+                    torch::Tensor x = torch::tensor(temp).reshape({1, 8});
+#endif
+                    float res = query_cost_model_temp->predict(x).item().toFloat();
+                    temp_loss += abs(res - test_query_time_labels[j]);
+                }
+                if (temp_loss < loss)
+                {
+                    loss = temp_loss;
+                    query_cost_model = query_cost_model_temp;
+                }
+            }
             torch::save(query_cost_model, query_time_model_path);
-            // learn
 
             status = Constants::STATUS_FRAMEWORK_INIT_BUILD_PROCESSOR_TRAIN_DONE;
         }
