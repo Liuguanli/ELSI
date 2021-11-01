@@ -68,3 +68,9 @@ const string Constants::RECORDS = "./files/records/";
 const string Constants::PRE_TRAIN_1D_DATA = "/home/liuguanli/Documents/pre_train/1D_data/0.1/";
 const string Constants::RL_FILE = "/home/liuguanli/Dropbox/research/BASE/method_pool/RL/rl_4_sfc/RL_4_SFC.py";
 ```
+
+
+#### 5. TODO
+### Column Name
+- [x] Add data sets
+- [ ] Add pre-trained models
