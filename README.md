@@ -77,6 +77,9 @@ const string Constants::RL_FILE = "/home/liuguanli/Dropbox/research/BASE/method_
 
 
 #### 5. TODO
-### Column Name
 - [x] Add data sets
 - [ ] Add pre-trained models
+- [ ] Add comments for key steps
+- [ ] Clean up codes
+- [ ] Add config for each EXP
+- [ ] Make dynamic model input
