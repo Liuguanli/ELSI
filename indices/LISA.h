@@ -677,7 +677,7 @@ namespace lisa
             for (size_t i = 0; i < bin_num_synthetic; i++)
             {
                 float dist = i * 0.1;
-                string name = "/home/research/datasets/BASE/synthetic/" + to_string(cardinality_u) + "_" + to_string(dist) + ".csv";
+                string name = Constants::SYNTHETIC_DATA_PATH + to_string(cardinality_u) + "_" + to_string(dist) + ".csv";
                 save_data(generate_points(cardinality_u, dist).points, name);
             }
             cardinality_u /= 10;

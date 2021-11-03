@@ -27,7 +27,7 @@
 #include "method_pool/MR.h"
 #include "method_pool/method.h"
 
-#include "utils/MethodScorer.h"
+// #include "utils/MethodScorer.h"
 #include "utils/Log.h"
 #include "utils/Util.h"
 #include "utils/Config.h"

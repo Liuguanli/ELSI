@@ -24,6 +24,7 @@ public:
     int partition_id;
     double key;
     double normalized_ml_key;
+    bool is_deleted = false;
 
     Point()
     {
