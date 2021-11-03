@@ -9,26 +9,20 @@ class Point
 {
 
 public:
-    //  For ZM-index
     float x = 0.0;
     float y = 0.0;
     int x_i;
     int y_i;
-    long long curve_val = 0;
+
     float label;
     int index = 0;
     float normalized_key;
     double temp_dist;
-
-    // For ML-index and LISA
     int partition_id;
     double key;
-    double normalized_ml_key;
     bool is_deleted = false;
 
-    Point()
-    {
-    }
+    Point() {}
 
     Point(float x, float y)
     {
@@ -48,11 +42,6 @@ public:
         }
         return false;
     }
-
-    // string get_self()
-    // {
-    //     return to_string(x) + "," + to_string(y) + "\n";
-    // }
 
     double cal_dist(Point point)
     {

@@ -81,20 +81,20 @@ namespace rsmi
     //     for (long i = 0; i < N; i++)
     //     {
     //         long long xs[2] = {(long long)(points[i].x * N), (long long)(points[i].y * N)};
-    //         points[i].curve_val = compute_Z_value(xs, 2, index_bit_num);
+    //         points[i].key = compute_Z_value(xs, 2, index_bit_num);
     //     }
-    //     sort(points.begin(), points.end(), sort_curve_val());
+    //     sort(points.begin(), points.end(), sort_key());
 
-    //     first_key = points[0].curve_val;
-    //     last_key = points[N - 1].curve_val;
+    //     first_key = points[0].key;
+    //     last_key = points[N - 1].key;
     //     gap = last_key - first_key;
 
     //     for (long i = 0; i < N; i++)
     //     {
     //         points[i].index = i;
     //         points[i].label = (float)i / N;
-    //         points[i].normalized_key = (float)(points[i].curve_val - first_key) / gap;
-    //         keys.push_back(points[i].curve_val);
+    //         points[i].normalized_key = (float)(points[i].key - first_key) / gap;
+    //         keys.push_back(points[i].key);
     //     }
     // }
 

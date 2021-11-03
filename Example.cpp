@@ -64,13 +64,13 @@ using namespace rsmi;
 //     for (long i = 0; i < N; i++)
 //     {
 //         long long xs[2] = {(long long)(points[i].x * N), (long long)(points[i].y * N)};
-//         points[i].curve_val = compute_Z_value(xs, 2, bit_num);
+//         points[i].key = compute_Z_value(xs, 2, bit_num);
 //     }
-//     sort(points.begin(), points.end(), sort_curve_val());
+//     sort(points.begin(), points.end(), sort_key());
 //     vector<long> keys(N);
 //     for (long i = 0; i < N; i++)
 //     {
-//         keys[i] = points[i].curve_val;
+//         keys[i] = points[i].key;
 //     }
 //     return keys;
 // }

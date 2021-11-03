@@ -101,14 +101,6 @@ struct sortY
     }
 };
 
-struct sort_curve_val
-{
-    bool operator()(const Point point1, const Point point2)
-    {
-        return (point1.curve_val < point2.curve_val);
-    }
-};
-
 struct sort_label
 {
     bool operator()(const Point point1, const Point point2)

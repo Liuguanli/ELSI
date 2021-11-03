@@ -754,11 +754,11 @@ public:
     //     for (int i = 0; i < N; i++)
     //     {
     //         points[i].y_i = i;
-    //         long long curve_val = compute_Hilbert_value(points[i].x_i, points[i].y_i, width);
-    //         points[i].curve_val = curve_val;
-    //         result.push_back(curve_val);
+    //         long long key = compute_Hilbert_value(points[i].x_i, points[i].y_i, width);
+    //         points[i].key = key;
+    //         result.push_back(key);
     //     }
-    //     sort(points.begin(), points.end(), sort_curve_val());
+    //     sort(points.begin(), points.end(), sort_key());
     //     return result;
     // }
 
@@ -780,8 +780,8 @@ public:
     //     {
     //         points[i].x_i = points[i].x * width;
     //         points[i].y_i = points[i].y * width;
-    //         long long curve_val = compute_Z_value(points[i].x_i, points[i].y_i, bit_num);
-    //         result.push_back(curve_val);
+    //         long long key = compute_Z_value(points[i].x_i, points[i].y_i, bit_num);
+    //         result.push_back(key);
     //     }
     //     sort(result.begin(), result.end());
     //     return result;

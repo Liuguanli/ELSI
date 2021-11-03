@@ -21,11 +21,8 @@ private:
     int level;
     int index;
     long long N = 0;
-
     int bit_num;
-
     Mbr mbr;
-
     bool is_reused = false;
     long long side = 0;
 
@@ -35,9 +32,7 @@ public:
     int leaf_node_num = 0;
     int width = 0;
     int max_partition_num = Constants::MAX_WIDTH;
-
     int page_size = Constants::PAGESIZE;
-
     bool is_last = false;
     float x_gap = 1.0;
     float x_scale = 1.0;
@@ -54,7 +49,6 @@ public:
     vector<LeafNode> leafnodes;
     vector<float> points_x;
     vector<float> points_y;
-    float sampling_rate = 1.0;
 
     Partition() {}
 
@@ -81,18 +75,18 @@ public:
         for (int i = 0; i < N; i++)
         {
             points[i].y_i = i;
-            points[i].curve_val = compute_Hilbert_value(points[i].x_i, points[i].y_i, side);
+            points[i].key = compute_Hilbert_value(points[i].x_i, points[i].y_i, side);
         }
-        sort(points.begin(), points.end(), sort_curve_val());
+        sort(points.begin(), points.end(), sort_key());
         for (int i = 0; i < N; i++)
         {
-            keys.push_back(points[i].curve_val);
+            keys.push_back(points[i].key);
             labels.push_back((float)i / N);
             locations.push_back((points[i].x - x_0) * x_scale + x_0);
             locations.push_back((points[i].y - y_0) * y_scale + y_0);
         }
-        long long h_min = points[0].curve_val;
-        long long h_max = points[N - 1].curve_val;
+        long long h_min = points[0].key;
+        long long h_max = points[N - 1].key;
         long long h_gap = h_max - h_min + 1;
 
         width = N - 1;
@@ -204,7 +198,7 @@ public:
                 int counter = 0;
                 for (Point point : sub_vec)
                 {
-                    point.curve_val = Z_value;
+                    point.key = Z_value;
                     point.label = (float)(Z_value - z_min) / z_gap;
                     // point.label =
                     // keys.push_back(Z_value);
@@ -217,11 +211,11 @@ public:
             }
         }
 
-        sort(points.begin(), points.end(), sort_curve_val());
+        sort(points.begin(), points.end(), sort_key());
         point_index = 0;
         for (Point point : points)
         {
-            keys.push_back(point.curve_val);
+            keys.push_back(point.key);
             labels.push_back(point.label);
             locations.push_back((point.x - x_0) * x_scale + x_0);
             locations.push_back((point.y - y_0) * y_scale + y_0);
@@ -230,7 +224,7 @@ public:
 
     bool point_query_bs(Point &query_point)
     {
-        // cout << "query_point.curve: " << query_point.curve_val << endl;
+        // cout << "query_point.curve: " << query_point.key << endl;
         int predicted_index = 0;
         float x1 = (query_point.x - x_0) * x_scale + x_0;
         float x2 = (query_point.y - y_0) * y_scale + y_0;
@@ -245,10 +239,10 @@ public:
         while (front <= back)
         {
             int mid = (front + back) / 2;
-            long long first_curve_val = leafnodes[mid].children[0].curve_val;
-            long long last_curve_val = leafnodes[mid].children[leafnodes[mid].children.size() - 1].curve_val;
+            long long first_curve_val = leafnodes[mid].children[0].key;
+            long long last_curve_val = leafnodes[mid].children[leafnodes[mid].children.size() - 1].key;
 
-            if (first_curve_val <= query_point.curve_val && query_point.curve_val <= last_curve_val)
+            if (first_curve_val <= query_point.key && query_point.key <= last_curve_val)
             {
                 vector<Point>::iterator iter = find(leafnodes[mid].children.begin(), leafnodes[mid].children.end(), query_point);
                 if (iter == leafnodes[mid].children.end())
@@ -262,7 +256,7 @@ public:
             }
             else
             {
-                if (leafnodes[mid].children[0].curve_val < query_point.curve_val)
+                if (leafnodes[mid].children[0].key < query_point.key)
                 {
                     front = mid + 1;
                 }
@@ -272,6 +266,7 @@ public:
                 }
             }
         }
+        return false;
     }
 
     bool point_query(Point &query_point)

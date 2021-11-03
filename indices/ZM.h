@@ -80,20 +80,20 @@ namespace zm
         for (long i = 0; i < N; i++)
         {
             long long xs[2] = {(long long)(points[i].x * N), (long long)(points[i].y * N)};
-            points[i].curve_val = compute_Z_value(xs, 2, index_bit_num);
+            points[i].key = compute_Z_value(xs, 2, index_bit_num);
         }
-        sort(points.begin(), points.end(), sort_curve_val());
+        sort(points.begin(), points.end(), sort_key());
 
-        first_key = points[0].curve_val;
-        last_key = points[N - 1].curve_val;
+        first_key = points[0].key;
+        last_key = points[N - 1].key;
         gap = last_key - first_key;
 
         for (long i = 0; i < N; i++)
         {
             points[i].index = i;
             points[i].label = (float)i / N;
-            points[i].normalized_key = (float)(points[i].curve_val - first_key) / gap;
-            keys.push_back(points[i].curve_val);
+            points[i].normalized_key = (float)(points[i].key - first_key) / gap;
+            keys.push_back(points[i].key);
         }
     }
 
@@ -128,10 +128,10 @@ namespace zm
     int get_point_index(Point &query_point, long &front, long &back)
     {
         long long xs[2] = {(long long)(query_point.x * N), (long long)(query_point.y * N)};
-        long long curve_val = compute_Z_value(xs, 2, index_bit_num);
-        query_point.curve_val = curve_val;
-        float key = (curve_val - first_key) * 1.0 / gap;
-        query_point.normalized_key = key;
+        long long key = compute_Z_value(xs, 2, index_bit_num);
+        query_point.key = key;
+        double normalized_key = (key - first_key) * 1.0 / gap;
+        query_point.normalized_key = normalized_key;
         int predicted_index = 0;
         int next_stage_length = 1;
         int min_error = 0;
@@ -168,10 +168,10 @@ namespace zm
         while (front <= back)
         {
             int mid = (front + back) / 2;
-            long long first_curve_val = storage_leafnodes[mid].children[0].curve_val;
-            long long last_curve_val = storage_leafnodes[mid].children[storage_leafnodes[mid].children.size() - 1].curve_val;
+            long long first_curve_val = storage_leafnodes[mid].children[0].key;
+            long long last_curve_val = storage_leafnodes[mid].children[storage_leafnodes[mid].children.size() - 1].key;
 
-            if (first_curve_val <= query_point.curve_val && query_point.curve_val <= last_curve_val)
+            if (first_curve_val <= query_point.key && query_point.key <= last_curve_val)
             {
                 vector<Point>::iterator iter = find(storage_leafnodes[mid].children.begin(), storage_leafnodes[mid].children.end(), query_point);
                 if (iter == storage_leafnodes[mid].children.end())
@@ -185,7 +185,7 @@ namespace zm
             }
             else
             {
-                if (storage_leafnodes[mid].children[0].curve_val < query_point.curve_val)
+                if (storage_leafnodes[mid].children[0].key < query_point.key)
                 {
                     front = mid + 1;
                 }
@@ -319,10 +319,10 @@ namespace zm
         while (front <= back)
         {
             int mid = (front + back) / 2;
-            long long first_curve_val = storage_leafnodes[mid].children[0].curve_val;
-            long long last_curve_val = storage_leafnodes[mid].children[storage_leafnodes[mid].children.size() - 1].curve_val;
+            long long first_curve_val = storage_leafnodes[mid].children[0].key;
+            long long last_curve_val = storage_leafnodes[mid].children[storage_leafnodes[mid].children.size() - 1].key;
 
-            if (first_curve_val <= point.curve_val && point.curve_val <= last_curve_val)
+            if (first_curve_val <= point.key && point.key <= last_curve_val)
             {
                 if (storage_leafnodes[mid].is_full())
                 {
@@ -340,7 +340,7 @@ namespace zm
             }
             else
             {
-                if (first_curve_val < point.curve_val)
+                if (first_curve_val < point.key)
                 {
                     front = mid + 1;
                 }
@@ -359,10 +359,10 @@ namespace zm
         while (front <= back)
         {
             int mid = (front + back) / 2;
-            long long first_curve_val = storage_leafnodes[mid].children[0].curve_val;
-            long long last_curve_val = storage_leafnodes[mid].children[storage_leafnodes[mid].children.size() - 1].curve_val;
+            long long first_curve_val = storage_leafnodes[mid].children[0].key;
+            long long last_curve_val = storage_leafnodes[mid].children[storage_leafnodes[mid].children.size() - 1].key;
 
-            if (first_curve_val <= query_point.curve_val && query_point.curve_val <= last_curve_val)
+            if (first_curve_val <= query_point.key && query_point.key <= last_curve_val)
             {
                 for (size_t i = 0; i < storage_leafnodes[mid].children.size(); i++)
                 {
@@ -376,7 +376,7 @@ namespace zm
             }
             else
             {
-                if (storage_leafnodes[mid].children[0].curve_val < query_point.curve_val)
+                if (storage_leafnodes[mid].children[0].key < query_point.key)
                 {
                     front = mid + 1;
                 }
@@ -448,6 +448,7 @@ namespace zm
                     continue;
                 }
                 DataSet<Point, long long> original_data_set(records[i][j]);
+                original_data_set.read_keys_and_labels();
                 int method = exp_recorder.build_method;
                 if (exp_recorder.is_framework)
                 {
@@ -619,6 +620,8 @@ namespace zm
         }
         dataset.points = points;
         dataset.mapping();
+        dataset.generate_normalized_keys();
+        dataset.generate_labels();
         return dataset;
     }
 
@@ -674,6 +677,8 @@ namespace zm
         exp_recorder.timer_begin();
 
         dataset.mapping();
+        dataset.generate_normalized_keys();
+        dataset.generate_labels();
         exp_recorder.timer_end();
         print("mapping data time:" + to_string((int)(exp_recorder.time / 1e9)) + "s");
 

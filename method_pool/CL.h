@@ -39,12 +39,13 @@ public:
         DataSet<D, T> generated_dataset(out_file_name);
         generated_dataset.read_data();
         generated_dataset.mapping();
+        generated_dataset.generate_normalized_keys();
+        generated_dataset.generate_labels();
         return generated_dataset;
     }
 
     DataSet<D, T> do_cl_2d(DataSet<D, T> &dataset, int k)
     {
-        // TODO 1 store as a temp dataset file, use python to get centroids
         cout << "do_cl:" << dataset.path << endl;
         dataset.save_temp_data();
         string out_file_name = "./data/generated.csv";
@@ -58,9 +59,9 @@ public:
         DataSet<D, T> generated_dataset(out_file_name);
         generated_dataset.read_data();
         generated_dataset.mapping();
+        generated_dataset.generate_normalized_keys();
+        generated_dataset.generate_labels();
         return generated_dataset;
-        // TODO needs a function pointer to get the DataSet
-        // e.g., dataset = function pointer (out_file_name);
     }
 };
 

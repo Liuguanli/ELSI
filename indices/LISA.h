@@ -483,6 +483,7 @@ namespace lisa
             }
 
             DataSet<Point, double> original_data_set(part_data);
+            original_data_set.read_keys_and_labels();
             original_data_set.keys = keys;
             int method = exp_recorder.build_method;
             if (exp_recorder.is_framework)
@@ -719,6 +720,8 @@ namespace lisa
         print("read data time:" + to_string((int)(exp_recorder.time / 1e9)) + "s");
         exp_recorder.timer_begin();
         dataset.mapping();
+        dataset.generate_normalized_keys();
+        dataset.generate_labels();
         exp_recorder.timer_end();
         cout << "finish mapping" << endl;
         print("mapping data time:" + to_string((int)(exp_recorder.time / 1e9)) + "s");

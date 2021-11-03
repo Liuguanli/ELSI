@@ -37,6 +37,7 @@ public:
             points.push_back(data_set.points[i]);
         }
         DataSet<D, T> sampled_data_set(points);
+        sampled_data_set.read_keys_and_labels();
         cout << "size sp:" << sampled_data_set.points.size() << endl;
         return sampled_data_set;
     }

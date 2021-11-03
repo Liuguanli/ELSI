@@ -43,30 +43,60 @@ public:
     DataSet(vector<D> &points)
     {
         this->points = points;
-        for (size_t i = 0; i < points.size(); i++)
-        {
-            // keys.push_back(points[i].key);
-            keys.push_back(points[i].curve_val);
-            labels.push_back(points[i].label);
-            normalized_keys.push_back(points[i].normalized_key);
-        }
     }
 
-
-    void mapping()
+    DataSet *mapping()
     {
         if (mapping_pointer != NULL)
         {
             mapping_pointer(points, keys);
         }
-
-        generate_labels();
-        generate_normalized_keys();
+        return this;
     }
 
-    void generate_normalized_keys()
+    DataSet *read_keys_and_labels()
     {
+        int N = points.size();
+        for (size_t i = 0; i < N; i++)
+        {
+            keys.push_back(points[i].key);
+            labels.push_back(points[i].label);
+            normalized_keys.push_back(points[i].normalized_key);
+        }
+        return this;
+    }
 
+    DataSet *read_keys()
+    {
+        int N = points.size();
+        for (size_t i = 0; i < N; i++)
+        {
+            keys.push_back(points[i].key);
+        }
+        return this;
+    }
+
+    DataSet *read_labels()
+    {
+        int N = points.size();
+        for (size_t i = 0; i < N; i++)
+        {
+            labels.push_back(points[i].label);
+        }
+    }
+
+    DataSet *read_normalized_keys()
+    {
+        int N = points.size();
+        for (size_t i = 0; i < N; i++)
+        {
+            normalized_keys.push_back(points[i].normalized_key);
+        }
+        return this;
+    }
+
+    DataSet *generate_normalized_keys()
+    {
         normalized_keys.clear();
         normalized_keys.shrink_to_fit();
         if (gen_input_keys_pointer == NULL)
@@ -84,6 +114,7 @@ public:
         {
             gen_input_keys_pointer(points, normalized_keys);
         }
+        return this;
     }
 
     void generate_labels()

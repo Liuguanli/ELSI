@@ -35,6 +35,7 @@ public:
         get_rep_set_space(m, start_x, start_y, x_edge_length, y_edge_length, data_set.points, points);
         sort(points.begin(), points.end(), sort_label());
         DataSet<Point, T> sampled_data_set(points);
+        sampled_data_set.read_keys_and_labels();
         return sampled_data_set;
     }
 

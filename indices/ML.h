@@ -153,7 +153,7 @@ namespace ml
         {
             points[i].index = i;
             points[i].label = (float)i / N;
-            points[i].normalized_ml_key = (points[i].key - first_key) / gap;
+            points[i].normalized_key = (points[i].key - first_key) / gap;
             keys.push_back(points[i].key);
         }
     }
@@ -219,7 +219,7 @@ namespace ml
         double dist = query_point.cal_dist(reference_points[partition_id]);
         query_point.key = offsets[partition_id] + dist;
         double key = (query_point.key - first_key) / gap;
-        query_point.normalized_ml_key = key;
+        query_point.normalized_key = key;
 
         return get_point_index(key, front, back);
     }
@@ -722,7 +722,7 @@ namespace ml
         int min_error = 0;
         for (Point point : dataset.points)
         {
-            float pred = mlp->predict_ZM(point.normalized_ml_key);
+            float pred = mlp->predict_ZM(point.normalized_key);
             int pos = pred * next_stage_length;
             pos = pos < 0 ? 0 : pos;
             pos = pos >= next_stage_length ? next_stage_length - 1 : pos;
@@ -769,6 +769,7 @@ namespace ml
                 // TODO change records[i][j] to Dataset
                 // std::shared_ptr<MLP> mlp = framework.build(config::lambda, records[i][j]);
                 DataSet<Point, double> original_data_set(records[i][j]);
+                original_data_set.read_keys_and_labels();
                 int method = exp_recorder.build_method;
                 if (exp_recorder.is_framework)
                 {
@@ -782,7 +783,7 @@ namespace ml
                 int min_error = 0;
                 for (Point point : records[i][j])
                 {
-                    float pred = mlp->predict_ZM(point.normalized_ml_key);
+                    float pred = mlp->predict_ZM(point.normalized_key);
                     int pos = pred * next_stage_length;
                     pos = pos < 0 ? 0 : pos;
                     pos = pos >= next_stage_length ? next_stage_length - 1 : pos;
@@ -954,6 +955,8 @@ namespace ml
         }
         dataset.points = points;
         dataset.mapping();
+        dataset.generate_normalized_keys();
+        dataset.generate_labels();
         return dataset;
     }
 
@@ -1016,6 +1019,8 @@ namespace ml
         exp_recorder.timer_begin();
 
         dataset.mapping();
+        dataset.generate_normalized_keys();
+        dataset.generate_labels();
         exp_recorder.timer_end();
         print("mapping data time:" + to_string((int)(exp_recorder.time / 1e9)) + "s");
 
