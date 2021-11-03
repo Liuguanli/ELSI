@@ -83,11 +83,3 @@ const string Constants::PRE_TRAIN_1D_DATA = "/home/liuguanli/Documents/pre_train
 const string Constants::RL_FILE = "/home/liuguanli/Dropbox/research/BASE/method_pool/RL/rl_4_sfc/RL_4_SFC.py";
 ```
 
-
-### 5. TODO
-- [x] Add data sets
-- [ ] Add pre-trained models
-- [ ] Add comments for key steps
-- [ ] Clean up codes
-- [ ] Add config for each EXP
-- [ ] Make dynamic model input

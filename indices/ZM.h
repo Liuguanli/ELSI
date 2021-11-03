@@ -644,6 +644,14 @@ namespace zm
     {
         exp_recorder.name = "ZM";
         exp_recorder.timer_begin();
+        config::method_pool.insert(pair<int, int>(0, Constants::CL));
+        config::method_pool.insert(pair<int, int>(1, Constants::MR));
+        config::method_pool.insert(pair<int, int>(2, Constants::OG));
+        config::method_pool.insert(pair<int, int>(3, Constants::RL));
+        config::method_pool.insert(pair<int, int>(4, Constants::RS));
+        config::method_pool.insert(pair<int, int>(5, Constants::SP));
+        framework.config_method_pool();
+        // framework.index_name = "ZM";
         framework.dimension = 1;
         framework.point_query_p = point_query;
         framework.window_query_p = window_query;
@@ -657,9 +665,8 @@ namespace zm
         DataSet<Point, long long>::read_data_pointer = read_data;
         DataSet<Point, long long>::mapping_pointer = mapping;
         DataSet<Point, long long>::save_data_pointer = save_data;
+
         stages.push_back(1);
-        framework.index_name = "ZM";
-        framework.config_method_pool();
         if (exp_recorder.is_framework)
         {
             framework.init();

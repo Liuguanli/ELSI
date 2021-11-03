@@ -43,12 +43,14 @@ template <typename D, typename T>
 class ELSI
 {
 public:
-    string index_name = "";
+    // string index_name = "";
     int dimension = 1;
     int status = -1;
-    std::shared_ptr<MLP> query_cost_model = std::make_shared<MLP>(8, 32);
-    std::shared_ptr<MLP> build_cost_model = std::make_shared<MLP>(8, 32);
-    std::shared_ptr<MLP> rebuild_model = std::make_shared<MLP>(5, 32);
+    // std::shared_ptr<MLP> query_cost_model = std::make_shared<MLP>(8, 32);
+    // std::shared_ptr<MLP> build_cost_model = std::make_shared<MLP>(8, 32);
+    std::shared_ptr<MLP> query_cost_model;
+    std::shared_ptr<MLP> build_cost_model;
+    std::shared_ptr<MLP> rebuild_model = std::make_shared<MLP>(5, Constants::SCORER_WIDTH);
 
     void (*point_query_p)(Query<D> &);
     void (*build_index_p)(DataSet<D, T>, int);
@@ -67,13 +69,18 @@ public:
 
     void config_method_pool()
     {
-
-        methods.insert(pair<int, vector<float>>(0, {1, 0, 0, 0, 0, 0}));
-        methods.insert(pair<int, vector<float>>(1, {0, 1, 0, 0, 0, 0}));
-        methods.insert(pair<int, vector<float>>(2, {0, 0, 1, 0, 0, 0}));
-        methods.insert(pair<int, vector<float>>(5, {0, 0, 0, 0, 0, 1}));
-        methods.insert(pair<int, vector<float>>(3, {0, 0, 0, 1, 0, 0}));
-        methods.insert(pair<int, vector<float>>(4, {0, 0, 0, 0, 1, 0}));
+        int pool_size = config::method_pool.size();
+        for (size_t i = 0; i < pool_size; i++)
+        {
+            vector<float> one_hot(pool_size);
+            for (size_t j = 0; j < pool_size; j++)
+            {
+                one_hot[j] = i == j ? 1 : 0;
+            }
+            methods.insert(pair<int, vector<float>>(i, one_hot));
+        }
+        query_cost_model = std::make_shared<MLP>(2 + pool_size, Constants::SCORER_WIDTH);
+        build_cost_model = std::make_shared<MLP>(2 + pool_size, Constants::SCORER_WIDTH);
     }
 
     void init()
@@ -125,7 +132,7 @@ public:
     std::shared_ptr<MLP> build_with_method(DataSet<D, T> &original_data_set, int method_index)
     {
         DataSet<D, T> shrinked_data_set;
-        switch (method_index)
+        switch (config::method_pool[method_index])
         {
         case Constants::CL:
             CL<D, T> cl;

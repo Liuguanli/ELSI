@@ -45,6 +45,7 @@ public:
     static const int START_EPOCH = 300;
     static const int EPOCH_ADDED = 100;
     static const int BIT_NUM = 6;
+    static const int SCORER_WIDTH = 32;
 
     static const int THRESHOLD = 20000;
 
@@ -113,7 +114,6 @@ public:
     static const string DELETEACCKNN;
 
     static const string LEARNED_CDF;
-
 
     static const string PRE_TRAIN_1D_DATA;
 

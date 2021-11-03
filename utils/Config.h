@@ -18,12 +18,13 @@
 
 namespace config
 {
+    map<int, int> method_pool;
     float sampling_rate = 0.0001;
     int bit_num = 8;
     int rs_m = 100;
     int cluster_k = 100;
 
-    float lambda = 0.8; 
+    float lambda = 0.8;
     float query_frequency = 1.0;
 
 }
