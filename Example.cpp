@@ -165,34 +165,34 @@ void test_ZM(ExpRecorder &exp_recorder)
     exp_recorder.time /= 1e9;
     file_writer.write_build(exp_recorder);
 
-    // Query<Point> query;
-    // long N = zm::dataset.points.size();
-    // cout << "query num:" << N << endl;
-    // query.set_point_query()->query_points = zm::dataset.points;
-    // // ->set_query_points(zm::dataset.points);
-    // zm::query(query, exp_recorder);
-    // exp_recorder.time /= N;
-    // cout << "query time:" << exp_recorder.time << endl;
-    // file_writer.write_point_query(exp_recorder);
+    Query<Point> query;
+    long N = zm::dataset.points.size();
+    cout << "query num:" << N << endl;
+    query.set_point_query()->query_points = zm::dataset.points;
+    // ->set_query_points(zm::dataset.points);
+    zm::query(query, exp_recorder);
+    exp_recorder.time /= N;
+    cout << "query time:" << exp_recorder.time << endl;
+    file_writer.write_point_query(exp_recorder);
 
-    // vector<Mbr> mbrs = mbrs_map[to_string(areas[2]) + to_string(ratios[2])];
-    // query.set_window_query()->query_windows = mbrs;
-    // // ->set_query_windows(mbrs);
-    // zm::query(query, exp_recorder);
-    // exp_recorder.time /= query_num;
-    // file_writer.write_window_query(exp_recorder);
+    vector<Mbr> mbrs = mbrs_map[to_string(areas[2]) + to_string(ratios[2])];
+    query.set_window_query()->query_windows = mbrs;
+    // ->set_query_windows(mbrs);
+    zm::query(query, exp_recorder);
+    exp_recorder.time /= query_num;
+    file_writer.write_window_query(exp_recorder);
 
-    // vector<Point> knn_query_points;
-    // for (int i = 0; i < query_num; i++)
-    // {
-    //     int index = rand() % zm::dataset.points.size();
-    //     knn_query_points.push_back(zm::dataset.points[index]);
-    // }
-    // query.set_knn_query()->set_k(25)->knn_query_points = knn_query_points;
-    // // set_knn_query_points(knn_query_points)->
-    // zm::query(query, exp_recorder);
-    // exp_recorder.time /= query_num;
-    // file_writer.write_kNN_query(exp_recorder);
+    vector<Point> knn_query_points;
+    for (int i = 0; i < query_num; i++)
+    {
+        int index = rand() % zm::dataset.points.size();
+        knn_query_points.push_back(zm::dataset.points[index]);
+    }
+    query.set_knn_query()->set_k(25)->knn_query_points = knn_query_points;
+    // set_knn_query_points(knn_query_points)->
+    zm::query(query, exp_recorder);
+    exp_recorder.time /= query_num;
+    file_writer.write_kNN_query(exp_recorder);
 }
 
 void test_ML(ExpRecorder &exp_recorder)
@@ -214,22 +214,22 @@ void test_ML(ExpRecorder &exp_recorder)
     cout << "query time:" << exp_recorder.time << endl;
     file_writer.write_point_query(exp_recorder);
 
-    // vector<Mbr> mbrs = mbrs_map[to_string(areas[2]) + to_string(ratios[2])];
-    // query.set_window_query()->query_windows = mbrs;
-    // ml::query(query, exp_recorder);
-    // exp_recorder.time /= query_num;
-    // file_writer.write_window_query(exp_recorder);
+    vector<Mbr> mbrs = mbrs_map[to_string(areas[2]) + to_string(ratios[2])];
+    query.set_window_query()->query_windows = mbrs;
+    ml::query(query, exp_recorder);
+    exp_recorder.time /= query_num;
+    file_writer.write_window_query(exp_recorder);
 
-    // vector<Point> knn_query_points;
-    // for (int i = 0; i < query_num; i++)
-    // {
-    //     int index = rand() % ml::dataset.points.size();
-    //     knn_query_points.push_back(ml::dataset.points[index]);
-    // }
-    // query.set_knn_query()->set_k(25)->knn_query_points = knn_query_points;
-    // ml::query(query, exp_recorder);
-    // exp_recorder.time /= query_num;
-    // file_writer.write_kNN_query(exp_recorder);
+    vector<Point> knn_query_points;
+    for (int i = 0; i < query_num; i++)
+    {
+        int index = rand() % ml::dataset.points.size();
+        knn_query_points.push_back(ml::dataset.points[index]);
+    }
+    query.set_knn_query()->set_k(25)->knn_query_points = knn_query_points;
+    ml::query(query, exp_recorder);
+    exp_recorder.time /= query_num;
+    file_writer.write_kNN_query(exp_recorder);
 }
 
 void test_RSMI(ExpRecorder &exp_recorder)

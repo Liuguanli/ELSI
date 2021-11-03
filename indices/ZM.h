@@ -43,8 +43,8 @@ namespace zm
     int page_size = Constants::PAGESIZE;
     int error_shift = 0;
     long long first_key, last_key, gap;
-    int cardinality_l = 10000;
-    int cardinality_u = 10000000;
+    int cardinality_l = 1e4;
+    int cardinality_u = 1e8;
 
     vector<Point> read_data(string filename, string delimeter, double &min_x, double &min_y, double &max_x, double &max_y)
     {
@@ -158,7 +158,6 @@ namespace zm
         front = front / page_size;
         back = back / page_size;
 
-        // cout << "predicted_index: " << predicted_index << " max_error: " << max_error << " min_error: " << min_error << " error_shift: " << error_shift << endl;
         return predicted_index;
     }
 
@@ -211,7 +210,36 @@ namespace zm
                 point_not_found++;
             }
         }
-        cout << "point_not_found: " << point_not_found << endl;
+    }
+
+    void window_query(vector<Point> &results, Mbr &query_window)
+    {
+        vector<Point> vertexes = query_window.get_corner_points();
+        vector<long> indices;
+        for (Point point : vertexes)
+        {
+            long index_low = 0, index_high = 0;
+            get_point_index(point, index_low, index_high);
+            indices.push_back(index_low);
+            indices.push_back(index_high);
+        }
+        sort(indices.begin(), indices.end());
+
+        long front = indices.front();
+        long back = indices.back();
+        for (size_t j = front; j <= back; j++)
+        {
+            if (storage_leafnodes[j].mbr.interact(query_window))
+            {
+                for (Point point : storage_leafnodes[j].children)
+                {
+                    if (query_window.contains(point))
+                    {
+                        results.push_back(point);
+                    }
+                }
+            }
+        }
     }
 
     void window_query(Query<Point> &query)
@@ -220,40 +248,56 @@ namespace zm
         query.results.shrink_to_fit();
 
         int point_not_found = 0;
-        // vector<Mbr> query_windows = query.query_windows;
         int query_num = query.query_windows.size();
         vector<Point> window_query_results;
         for (size_t i = 0; i < query_num; i++)
         {
-            // cout << "i:" << i << endl;
-            vector<Point> vertexes = query.query_windows[i].get_corner_points();
-            vector<long> indices;
-            for (Point point : vertexes)
-            {
-                long index_low = 0, index_high = 0;
-                get_point_index(point, index_low, index_high);
-                indices.push_back(index_low);
-                indices.push_back(index_high);
-                // cout << "index_low:" << index_low << " index_high:" << index_high << endl;
-            }
-            sort(indices.begin(), indices.end());
+            window_query(query.results, query.query_windows[i]);
+        }
+    }
 
-            long front = indices.front();
-            long back = indices.back();
-            // cout << "front: " << front << " back: " << back << endl;
-            for (size_t j = front; j <= back; j++)
+    void kNN_query(vector<Point> &results, Point query_point, int k)
+    {
+        // generate a new window query 
+        Query<Point> window_query_for_knn;
+        window_query_for_knn.set_window_query();
+        priority_queue<Point, vector<Point>, sortForKNN2> pq;
+        float knn_query_side = sqrt((float)k / N);
+        while (true)
+        {
+            vector<Mbr> window = {Mbr::get_mbr(query_point, knn_query_side)};
+            window_query_for_knn.query_windows = window;
+            window_query(window_query_for_knn);
+            if (window_query_for_knn.results.size() >= k)
             {
-                if (storage_leafnodes[j].mbr.interact(query.query_windows[i]))
+                for (size_t j = 0; j < window_query_for_knn.results.size(); j++)
                 {
-                    for (Point point : storage_leafnodes[j].children)
+                    double temp_dist = window_query_for_knn.results[j].cal_dist(query_point);
+                    window_query_for_knn.results[j].temp_dist = temp_dist;
+                    if (pq.size() < k)
                     {
-                        if (query.query_windows[i].contains(point))
+                        pq.push(window_query_for_knn.results[j]);
+                    }
+                    else
+                    {
+                        if (pq.top().temp_dist > temp_dist)
                         {
-                            query.results.push_back(point);
+                            pq.pop();
+                            pq.push(window_query_for_knn.results[j]);
                         }
                     }
                 }
+                if (pq.top().temp_dist <= knn_query_side)
+                {
+                    while (!pq.empty())
+                    {
+                        results.push_back(pq.top());
+                        pq.pop();
+                    }
+                    break;
+                }
             }
+            knn_query_side *= 2;
         }
     }
 
@@ -261,53 +305,11 @@ namespace zm
     {
         query.results.clear();
         query.results.shrink_to_fit();
-
         int query_num = query.knn_query_points.size();
-        Query<Point> window_query_for_knn;
-        window_query_for_knn.set_window_query();
         int k = query.get_k();
         for (size_t i = 0; i < query_num; i++)
         {
-            priority_queue<Point, vector<Point>, sortForKNN2> pq;
-            float knn_query_side = sqrt((float)k / N);
-            while (true)
-            {
-                // cout << "knn_query_side:" << knn_query_side << endl;
-                vector<Mbr> window = {Mbr::get_mbr(query.knn_query_points[i], knn_query_side)};
-                window_query_for_knn.query_windows = window;
-                window_query(window_query_for_knn);
-                // cout << "temp_result.size():" << temp_result.size() << endl;
-                if (window_query_for_knn.results.size() >= k)
-                {
-                    for (size_t j = 0; j < window_query_for_knn.results.size(); j++)
-                    {
-                        double temp_dist = window_query_for_knn.results[j].cal_dist(query.knn_query_points[i]);
-                        window_query_for_knn.results[j].temp_dist = temp_dist;
-                        if (pq.size() < k)
-                        {
-                            pq.push(window_query_for_knn.results[j]);
-                        }
-                        else
-                        {
-                            if (pq.top().temp_dist > temp_dist)
-                            {
-                                pq.pop();
-                                pq.push(window_query_for_knn.results[j]);
-                            }
-                        }
-                    }
-                    if (pq.top().temp_dist <= knn_query_side)
-                    {
-                        while (!pq.empty())
-                        {
-                            query.results.push_back(pq.top());
-                            pq.pop();
-                        }
-                        break;
-                    }
-                }
-                knn_query_side *= 2;
-            }
+            kNN_query(query.results, query.knn_query_points[i], k);
         }
     }
 
@@ -321,7 +323,6 @@ namespace zm
             int mid = (front + back) / 2;
             long long first_curve_val = storage_leafnodes[mid].children[0].curve_val;
             long long last_curve_val = storage_leafnodes[mid].children[storage_leafnodes[mid].children.size() - 1].curve_val;
-            // cout << "first_curve_val: " << first_curve_val << " last_curve_val: " << last_curve_val << endl;
 
             if (first_curve_val <= point.curve_val && point.curve_val <= last_curve_val)
             {
@@ -331,9 +332,6 @@ namespace zm
                     sort(storage_leafnodes[mid].children.begin(), storage_leafnodes[mid].children.end(), sort_key());
                     LeafNode right = storage_leafnodes[mid].split();
                     storage_leafnodes.insert(storage_leafnodes.begin() + mid + 1, right);
-                    // error_shift += page_size;
-                    // index[stages.size() - 1][last_model_index]->max_error += page_size;
-                    // index[stages.size() - 1][last_model_index]->min_error -= page_size;
                 }
                 else
                 {
@@ -636,8 +634,6 @@ namespace zm
 
     void init(string _dataset_name, ExpRecorder &exp_recorder)
     {
-        // dataset_name = _dataset_name;
-        // generate_points();
         exp_recorder.name = "ZM";
         exp_recorder.timer_begin();
         framework.dimension = 1;

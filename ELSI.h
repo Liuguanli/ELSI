@@ -72,9 +72,6 @@ public:
         methods.insert(pair<int, vector<float>>(1, {0, 1, 0, 0, 0, 0}));
         methods.insert(pair<int, vector<float>>(2, {0, 0, 1, 0, 0, 0}));
         methods.insert(pair<int, vector<float>>(5, {0, 0, 0, 0, 0, 1}));
-        // if (index_name != "LISA")
-        // {
-        // }
         methods.insert(pair<int, vector<float>>(3, {0, 0, 0, 1, 0, 0}));
         methods.insert(pair<int, vector<float>>(4, {0, 0, 0, 0, 1, 0}));
     }
@@ -284,6 +281,7 @@ public:
     {
         if (insert_p == NULL)
         {
+
             // if (extra_storage[extra_storage.size() - 1].is_full())
             // {
             //     ExtraStorageBlock<D> new_block;
