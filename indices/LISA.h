@@ -719,9 +719,7 @@ namespace lisa
         exp_recorder.timer_end();
         print("read data time:" + to_string((int)(exp_recorder.time / 1e9)) + "s");
         exp_recorder.timer_begin();
-        dataset.mapping();
-        dataset.generate_normalized_keys();
-        dataset.generate_labels();
+        dataset.mapping()->generate_normalized_keys()->generate_labels();
         exp_recorder.timer_end();
         cout << "finish mapping" << endl;
         print("mapping data time:" + to_string((int)(exp_recorder.time / 1e9)) + "s");

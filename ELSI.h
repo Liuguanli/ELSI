@@ -357,10 +357,7 @@ private:
                     DataSet<D, T> dataset;
                     dataset.dataset_name = ppath + path;
 
-                    dataset.read_data();
-                    dataset.mapping();
-                    dataset.generate_normalized_keys();
-                    dataset.generate_labels();
+                    dataset.read_data()->mapping()->generate_normalized_keys()->generate_labels();
                     init_storage_p(dataset);
 
                     for (std::map<int, vector<float>>::iterator iter = methods.begin(); iter != methods.end(); ++iter)
@@ -579,10 +576,7 @@ private:
 
                     DataSet<D, T> dataset;
                     dataset.dataset_name = ppath + path;
-                    dataset.read_data();
-                    dataset.mapping();
-                    dataset.generate_normalized_keys();
-                    dataset.generate_labels();
+                    dataset.read_data()->mapping()->generate_normalized_keys()->generate_labels();
                     init_storage_p(dataset);
 
                     // TODO generate synthetic points

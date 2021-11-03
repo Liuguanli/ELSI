@@ -117,19 +117,21 @@ public:
         return this;
     }
 
-    void generate_labels()
+    DataSet * generate_labels()
     {
         int N = points.size();
         for (size_t i = 0; i < N; i++)
         {
             labels.push_back((float)i / N);
         }
+        return this;
     }
 
-    void read_data()
+    DataSet * read_data()
     {
         // assert(dataset_name != NULL && dataset_name != "");
         points = read_data_pointer(dataset_name, ",", min_x, min_y, max_x, max_y);
+        return this;
     }
 
     void read_cdf_2d(string file_name)

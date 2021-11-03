@@ -40,7 +40,6 @@ public:
 
     Query *set_window_query()
     {
-        cout << "set_window_query" << endl;
         type = Constants::QUERY_TYPE_WINDOW;
         return this;
     }
