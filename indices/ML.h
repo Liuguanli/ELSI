@@ -511,26 +511,26 @@ namespace ml
                 if (S.size() == kk)
                 {
                     sort(S.begin(), S.end(), sortForKNN2());
-                    double dist_furthest = 0;
-                    int dist_furthest_i = 0;
-                    for (size_t i = 0; i < kk; i++)
+                    // double dist_furthest = 0;
+                    // int dist_furthest_i = 0;
+                    // for (size_t i = 0; i < kk; i++)
+                    // {
+                    //     double temp_dist = S[i].cal_dist(query_point);
+                    //     if (temp_dist > dist_furthest)
+                    //     {
+                    //         dist_furthest = temp_dist;
+                    //         dist_furthest_i = i;
+                    //     }
+                    // }
+                    if (point.cal_dist(query_point) < S[kk - 1].temp_dist && std::find(S.begin(), S.end(), point) == S.end())
                     {
-                        double temp_dist = S[i].cal_dist(query_point);
-                        if (temp_dist > dist_furthest)
-                        {
-                            dist_furthest = temp_dist;
-                            dist_furthest_i = i;
-                        }
-                    }
-                    if (point.cal_dist(query_point) < dist_furthest)
-                    {
-                        S.erase(S.begin() + dist_furthest_i);
-                        S.push_back(point);
-                        S[dist_furthest_i] = point;
+                        S[kk - 1] = point;
+                        // S[dist_furthest_i] = point;
                     }
                 }
                 else if (S.size() < kk)
                 {
+                    point.cal_dist(query_point);
                     S.push_back(point);
                 }
             }
@@ -573,24 +573,25 @@ namespace ml
                 if (S.size() == kk)
                 {
                     sort(S.begin(), S.end(), sortForKNN2());
-                    double dist_furthest = 0;
-                    int dist_furthest_i = 0;
-                    for (size_t i = 0; i < kk; i++)
+                    // double dist_furthest = 0;
+                    // int dist_furthest_i = 0;
+                    // for (size_t i = 0; i < kk; i++)
+                    // {
+                    //     double temp_dist = S[i].cal_dist(query_point);
+                    //     if (temp_dist > dist_furthest)
+                    //     {
+                    //         dist_furthest = temp_dist;
+                    //         dist_furthest_i = i;
+                    //     }
+                    // }
+                    if (point.cal_dist(query_point) < S[kk - 1].temp_dist && std::find(S.begin(), S.end(), point) == S.end())
                     {
-                        double temp_dist = S[i].cal_dist(query_point);
-                        if (temp_dist > dist_furthest)
-                        {
-                            dist_furthest = temp_dist;
-                            dist_furthest_i = i;
-                        }
-                    }
-                    if (point.cal_dist(query_point) < dist_furthest)
-                    {
-                        S[dist_furthest_i] = point;
+                        S[kk - 1] = point;
                     }
                 }
                 else if (S.size() < kk)
                 {
+                    point.cal_dist(query_point);
                     S.push_back(point);
                 }
             }
@@ -914,48 +915,47 @@ namespace ml
         if (query.is_knn())
         {
             vector<Point> res;
-            cout << "knn query size: " << query.results.size() << endl;
+            // cout << "knn query size: " << query.results.size() << endl;
             int found_num = 0;
             for (size_t i = 0; i < query.knn_query_points.size(); i++)
             {
                 priority_queue<Point, vector<Point>, sortForKNN2> pq;
                 int k = query.get_k();
-                float knn_query_side = sqrt((float)k / N) * 4;
-                Mbr window = Mbr::get_mbr(query.knn_query_points[i], knn_query_side);
                 for (size_t j = 0; j < storage_leafnodes.size(); j++)
                 {
-                    if (storage_leafnodes[j].mbr.interact(window))
+                    for (Point point : storage_leafnodes[j].children)
                     {
-                        for (Point point : storage_leafnodes[j].children)
+                        point.cal_dist(query.knn_query_points[i]);
+                        if (pq.size() < k)
                         {
-                            if (window.contains(point))
+                            pq.push(point);
+                        }
+                        else
+                        {
+                            if (pq.top().temp_dist > point.temp_dist)
                             {
-                                point.temp_dist = point.cal_dist(query.knn_query_points[i]);
-                                if (pq.size() < k)
-                                {
-                                    pq.push(point);
-                                }
-                                else
-                                {
-                                    if (pq.top().temp_dist > point.temp_dist)
-                                    {
-                                        pq.pop();
-                                        pq.push(point);
-                                    }
-                                }
+                                pq.pop();
+                                pq.push(point);
                             }
                         }
                     }
                 }
+
                 vector<Point> query_res(query.results.begin() + i * k, query.results.begin() + i * k + k);
+                // for (size_t j = 0; j < query_res.size(); j++)
+                // {
+                //     cout << query_res[j].x << ", " << query_res[j].y << " " << query_res[j].temp_dist << endl;
+                // }
+                // cout << "---------------------------" << endl;
                 while (!pq.empty())
                 {
+                    // cout << pq.top().x << ", " << pq.top().y << " " << pq.top().temp_dist << endl;
+
                     vector<Point>::iterator iter = find(query_res.begin(), query_res.end(), pq.top());
                     if (iter != query_res.end())
                     {
                         found_num++;
                     }
-
                     pq.pop();
                 }
             }
