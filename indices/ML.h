@@ -510,6 +510,7 @@ namespace ml
             {
                 if (S.size() == kk)
                 {
+                    sort(S.begin(), S.end(), sortForKNN2());
                     double dist_furthest = 0;
                     int dist_furthest_i = 0;
                     for (size_t i = 0; i < kk; i++)
@@ -521,7 +522,7 @@ namespace ml
                             dist_furthest_i = i;
                         }
                     }
-                    if (query_point.cal_dist(point) < dist_furthest)
+                    if (point.cal_dist(query_point) < dist_furthest)
                     {
                         S.erase(S.begin() + dist_furthest_i);
                         S.push_back(point);
@@ -571,6 +572,7 @@ namespace ml
             {
                 if (S.size() == kk)
                 {
+                    sort(S.begin(), S.end(), sortForKNN2());
                     double dist_furthest = 0;
                     int dist_furthest_i = 0;
                     for (size_t i = 0; i < kk; i++)
@@ -582,7 +584,7 @@ namespace ml
                             dist_furthest_i = i;
                         }
                     }
-                    if (query_point.cal_dist(point) < dist_furthest)
+                    if (point.cal_dist(query_point) < dist_furthest)
                     {
                         S[dist_furthest_i] = point;
                     }
@@ -612,6 +614,7 @@ namespace ml
         }
     }
 
+    // TODO KNN accuracy bugs
     void kNN_query(vector<Point> &results, Point query_point, int kk)
     {
         vector<int> lp(k, -1); // stores the index of node
@@ -700,7 +703,14 @@ namespace ml
             }
             r *= 2;
         }
-        results.insert(results.end(), S.begin(), S.end());
+        vector<Point> extra_storage_S;
+        framework.kNN_query(extra_storage_S, query_point, kk);
+        if (extra_storage_S.size() != 0)
+        {
+            S.insert(S.end(), extra_storage_S.begin(), extra_storage_S.end());
+            sort(S.begin(), S.end(), sortForKNN2());
+        }
+        results.insert(results.end(), S.begin(), S.begin() + kk);
     }
 
     void kNN_query(Query<Point> &query)
