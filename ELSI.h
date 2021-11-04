@@ -437,7 +437,7 @@ public:
         torch::Tensor x = torch::tensor(statistics.get_input()).reshape({1, 5});
 #endif
         bool is_rebuild = rebuild_model->predict(x).item().toFloat() >= 0.5;
-        return false;
+        return is_rebuild;
     }
 
 private:
@@ -542,8 +542,7 @@ private:
             // torch::save(build_cost_model, build_time_model_path);
             // torch::save(query_cost_model, query_time_model_path);
 
-           
-            int k = 5;
+                       int k = 5;
             int parameter_gap = parameters.size() / k;
             int label_gap = build_time_labels.size() / k;
             float loss = numeric_limits<float>::max();
