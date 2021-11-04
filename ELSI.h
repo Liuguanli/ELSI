@@ -65,7 +65,7 @@ public:
     long max_cardinality = 10000000;
 
     // vector<ExtraStorageBlock<D>> extra_storage;
-    vector<D> extra_storage;
+    vector<LeafNode> extra_storage;
 
     void config_method_pool()
     {
@@ -251,26 +251,89 @@ public:
             point_query_p(query);
             print("point_query finish");
         }
-        // if (extra_storage.size() > 0)
-        // {
-        //     for (D query_point : query.query_points)
-        //     {
-        //         // vector<D>::iterator iter = find(extra_storage.begin(), extra_storage.end(), query_point);
-        //         // if (iter != extra_storage.end())
-        //         // {
-        //         // }
-        //     }
-        // }
+    }
+
+    bool point_query(Point &query_point)
+    {
+        long front = 0, back = extra_storage.size() - 1;
+        while (front <= back)
+        {
+            int mid = (front + back) / 2;
+            double first_key = extra_storage[mid].children[0].key;
+            double last_key = extra_storage[mid].children[extra_storage[mid].children.size() - 1].key;
+            if (first_key <= query_point.key && query_point.key <= last_key)
+            {
+                vector<Point>::iterator iter = find(extra_storage[mid].children.begin(), extra_storage[mid].children.end(), query_point);
+                return iter != extra_storage[mid].children.end();
+            }
+            else
+            {
+                if (extra_storage[mid].children[0].key < query_point.key)
+                {
+                    front = mid + 1;
+                }
+                else
+                {
+                    back = mid - 1;
+                }
+            }
+        }
+        return false;
+    }
+
+    void window_query(vector<Point> &results, Mbr &query_window)
+    {
+        for (size_t i = 0; i < extra_storage.size(); i++)
+        {
+            if (extra_storage[i].mbr.interact(query_window))
+            {
+                for (Point point : extra_storage[i].children)
+                {
+                    if (query_window.contains(point))
+                    {
+                        results.push_back(point);
+                    }
+                }
+            }
+        }
     }
 
     void window_query(Query<D> &query)
     {
-
         if (window_query_p != NULL)
         {
             print("window_query");
 
             window_query_p(query);
+        }
+    }
+
+    void kNN_query(vector<Point> &results, Point query_point, int kk)
+    {
+        priority_queue<Point, vector<Point>, sortForKNN2> pq;
+        for (size_t i = 0; i < extra_storage.size(); i++)
+        {
+            for (Point point : extra_storage[i].children)
+            {
+                point.cal_dist(query_point);
+                if (pq.size() >= kk)
+                {
+                    if (pq.top().temp_dist > point.temp_dist)
+                    {
+                        pq.pop();
+                        pq.push(point);
+                    }
+                }
+                else
+                {
+                    pq.push(point);
+                }
+            }
+        }
+        while (!pq.empty())
+        {
+            results.push_back(pq.top());
+            pq.pop();
         }
     }
 
@@ -288,23 +351,81 @@ public:
     {
         if (insert_p == NULL)
         {
+            long front = 0, back = extra_storage.size() - 1;
+            while (front <= back)
+            {
+                int mid = (front + back) / 2;
+                double first_key = extra_storage[mid].children[0].key;
+                double last_key = extra_storage[mid].children[extra_storage[mid].children.size() - 1].key;
 
-            // if (extra_storage[extra_storage.size() - 1].is_full())
-            // {
-            //     ExtraStorageBlock<D> new_block;
-            //     new_block.add_point(point);
-            //     extra_storage.push_back(new_block);
-            // }
-            // else
-            // {
-            //     extra_storage[extra_storage.size() - 1].add_point(point);
-            // }
-            extra_storage.push_back(point);
+                if (first_key <= point.key && point.key <= last_key)
+                {
+                    if (extra_storage[mid].is_full())
+                    {
+                        extra_storage[mid].add_point(point);
+                        sort(extra_storage[mid].children.begin(), extra_storage[mid].children.end(), sort_key());
+                        LeafNode right = extra_storage[mid].split();
+                        extra_storage.insert(extra_storage.begin() + mid + 1, right);
+                    }
+                    else
+                    {
+                        extra_storage[mid].add_point(point);
+                        sort(extra_storage[mid].children.begin(), extra_storage[mid].children.end(), sort_key());
+                    }
+                    return;
+                }
+                else
+                {
+                    if (first_key < point.key)
+                    {
+                        front = mid + 1;
+                    }
+                    else
+                    {
+                        back = mid - 1;
+                    }
+                }
+            }
         }
         else
         {
             insert_p(point);
         }
+    }
+
+    bool delete_(D &query_point)
+    {
+        long front = 0, back = extra_storage.size() - 1;
+        while (front <= back)
+        {
+            int mid = (front + back) / 2;
+            double first_key = extra_storage[mid].children[0].key;
+            double last_key = extra_storage[mid].children[extra_storage[mid].children.size() - 1].key;
+            if (first_key <= query_point.key && query_point.key <= last_key)
+            {
+                for (size_t i = 0; i < extra_storage[mid].children.size(); i++)
+                {
+                    if (extra_storage[mid].children[i] == query_point)
+                    {
+                        extra_storage[mid].children[i].is_deleted = true;
+                        return true;
+                    }
+                }
+                break;
+            }
+            else
+            {
+                if (extra_storage[mid].children[0].key < query_point.key)
+                {
+                    front = mid + 1;
+                }
+                else
+                {
+                    back = mid - 1;
+                }
+            }
+        }
+        return false;
     }
 
     bool is_rebuild(Statistics statistics)

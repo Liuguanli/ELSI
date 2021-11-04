@@ -174,14 +174,7 @@ namespace zm
             if (first_curve_val <= query_point.key && query_point.key <= last_curve_val)
             {
                 vector<Point>::iterator iter = find(storage_leafnodes[mid].children.begin(), storage_leafnodes[mid].children.end(), query_point);
-                if (iter == storage_leafnodes[mid].children.end())
-                {
-                    return false;
-                }
-                else
-                {
-                    return true;
-                }
+                return iter != storage_leafnodes[mid].children.end();
             }
             else
             {
@@ -247,7 +240,6 @@ namespace zm
         query.results.shrink_to_fit();
         int point_not_found = 0;
         int query_num = query.query_windows.size();
-        vector<Point> window_query_results;
         for (size_t i = 0; i < query_num; i++)
         {
             window_query(query.results, query.query_windows[i]);

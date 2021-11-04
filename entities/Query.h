@@ -23,6 +23,7 @@ public:
     vector<D> knn_query_points;
     vector<Mbr> query_windows;
     vector<D> results;
+    vector<D> extra_storage_results;
     bool is_point() { return type == Constants::QUERY_TYPE_POINT; }
     bool is_window() { return type == Constants::QUERY_TYPE_WINDOW; }
     bool is_knn() { return type == Constants::QUERY_TYPE_KNN; }
