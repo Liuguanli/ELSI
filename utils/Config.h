@@ -27,6 +27,14 @@ namespace config
     float lambda = 0.8;
     float query_frequency = 1.0;
 
+    void init_method_pool(vector<int> methods)
+    {
+        for (size_t i = 0; i < methods.size(); i++)
+        {
+            method_pool.insert(pair<int, int>(i, methods[i]));
+        }
+    }
+
 }
 
 #endif

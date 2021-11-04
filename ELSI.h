@@ -542,8 +542,7 @@ private:
             // torch::save(build_cost_model, build_time_model_path);
             // torch::save(query_cost_model, query_time_model_path);
 
-            // TODO use k-fold!!!
-            // TODO   2 define k 3 save the model with the heighest score
+           
             int k = 5;
             int parameter_gap = parameters.size() / k;
             int label_gap = build_time_labels.size() / k;

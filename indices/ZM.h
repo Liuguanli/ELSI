@@ -149,6 +149,8 @@ namespace zm
         min_error = index[level - 1][predicted_index]->min_error;
         max_error = index[level - 1][predicted_index]->max_error;
         predicted_index = index[level - 1][predicted_index]->predict_ZM(key) * next_stage_length;
+        predicted_index = max(predicted_index, 0);
+        predicted_index = min(predicted_index, next_stage_length - 1);
 
         front = predicted_index + min_error - error_shift;
         front = min(N - 1, max((long)0, front));
@@ -636,12 +638,16 @@ namespace zm
     {
         exp_recorder.name = "ZM";
         exp_recorder.timer_begin();
-        config::method_pool.insert(pair<int, int>(0, Constants::CL));
-        config::method_pool.insert(pair<int, int>(1, Constants::MR));
-        config::method_pool.insert(pair<int, int>(2, Constants::OG));
-        config::method_pool.insert(pair<int, int>(3, Constants::RL));
-        config::method_pool.insert(pair<int, int>(4, Constants::RS));
-        config::method_pool.insert(pair<int, int>(5, Constants::SP));
+        // config::method_pool.insert(pair<int, int>(0, Constants::CL));
+        // config::method_pool.insert(pair<int, int>(1, Constants::MR));
+        // config::method_pool.insert(pair<int, int>(2, Constants::OG));
+        // config::method_pool.insert(pair<int, int>(3, Constants::RL));
+        // config::method_pool.insert(pair<int, int>(4, Constants::RS));
+        // config::method_pool.insert(pair<int, int>(5, Constants::SP));
+
+        vector<int> methods{Constants::CL, Constants::MR, Constants::OG, Constants::RL, Constants::RS, Constants::SP};
+        config::init_method_pool(methods);
+
         framework.config_method_pool();
         // framework.index_name = "ZM";
         framework.dimension = 1;
@@ -659,6 +665,7 @@ namespace zm
         DataSet<Point, long long>::save_data_pointer = save_data;
 
         stages.push_back(1);
+
         if (exp_recorder.is_framework)
         {
             framework.init();

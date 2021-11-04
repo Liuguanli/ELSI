@@ -40,7 +40,7 @@ namespace ml
     DataSet<Point, double> dataset;
     int page_size = Constants::PAGESIZE;
     int error_shift = 0;
-    double first_key, last_key, gap;
+    double first_key = 0, last_key = 0, gap = 0;
     int cardinality_l = 10000;
     int cardinality_u = 10000000;
 
@@ -146,14 +146,18 @@ namespace ml
         last_key = points[N - 1].key;
         gap = last_key - first_key;
 
-        cout << "first_key: " << first_key << endl;
-        cout << "last_key: " << last_key << endl;
+        // cout << "first_key: " << first_key << endl;
+        // cout << "last_key: " << last_key << endl;
 
         for (long i = 0; i < N; i++)
         {
             points[i].index = i;
             points[i].label = (float)i / N;
             points[i].normalized_key = (points[i].key - first_key) / gap;
+            // if (abs(5.08001 - points[i].key) < 1e-5)
+            // {
+            //     cout << "-----i:" << i << " key:" << points[i].key << endl;
+            // }
             keys.push_back(points[i].key);
         }
     }
@@ -181,6 +185,7 @@ namespace ml
             auto bn = dataset.points.begin() + i * page_size;
             auto en = dataset.points.begin() + min((long)i * page_size + page_size, N);
             vector<Point> points(bn, en);
+            // cout << "points[0].key:" << points[0].key << " points[-1].key:" << points[page_size - 1].key << endl;
             LeafNode leaf_node(points);
             storage_leafnodes[i] = leaf_node;
         }
@@ -206,10 +211,17 @@ namespace ml
         max_error = index[level - 1][predicted_index]->max_error;
         predicted_index = index[level - 1][predicted_index]->predict_ZM(key) * next_stage_length;
 
+        predicted_index = max(predicted_index, 0);
+        predicted_index = min(predicted_index, next_stage_length - 1);
+
+        // cout << "min_error: " << min_error << " max_error: " << max_error << endl;
+        // cout << "predicted_index: " << predicted_index << endl;
         front = predicted_index + min_error - error_shift;
         front = min(N - 1, max((long)0, front));
         back = predicted_index + max_error + error_shift;
         back = min(N - 1, back);
+        // cout << "front: " << front << " back: " << back << endl;
+
         return predicted_index;
     }
 
@@ -285,17 +297,55 @@ namespace ml
     {
         long front = 0, back = 0;
         int predicted_index = get_point_index(query_point, front, back);
+
         front /= page_size;
         back /= page_size;
+        front--;
+        back++;
+        front = max((long)0, front);
+        back = min(back, (long)storage_leafnodes.size() - 1);
         while (front <= back)
         {
             int mid = (front + back) / 2;
             double first_ml_key = storage_leafnodes[mid].children[0].key;
             double last_ml_key = storage_leafnodes[mid].children[storage_leafnodes[mid].children.size() - 1].key;
+
+            // cout << "first_ml_key: " << first_ml_key << endl;
+            // cout << "last_ml_key: " << last_ml_key << endl;
+            // cout << "query_point.key: " << query_point.key << endl;
+            // cout << "front: " << front << " mid: " << mid << " back: " << back << endl;
+
             if (first_ml_key <= query_point.key && query_point.key <= last_ml_key)
             {
                 vector<Point>::iterator iter = find(storage_leafnodes[mid].children.begin(), storage_leafnodes[mid].children.end(), query_point);
-                return iter != storage_leafnodes[mid].children.end();
+                if (iter == storage_leafnodes[mid].children.end())
+                {
+                    int inner_front = mid - 1;
+
+                    while (inner_front >= 0 && (storage_leafnodes[inner_front].children[0].key <= query_point.key && query_point.key <= storage_leafnodes[inner_front].children[storage_leafnodes[inner_front].children.size() - 1].key))
+                    {
+                        iter = find(storage_leafnodes[inner_front].children.begin(), storage_leafnodes[inner_front].children.end(), query_point);
+                        if (iter != storage_leafnodes[inner_front].children.end())
+                        {
+                            return true;
+                        }
+                        inner_front--;
+                    }
+                    int inner_back = mid + 1;
+                    while (inner_back < storage_leafnodes.size() && (storage_leafnodes[inner_back].children[0].key <= query_point.key && query_point.key <= storage_leafnodes[inner_back].children[storage_leafnodes[inner_back].children.size() - 1].key))
+                    {
+                        iter = find(storage_leafnodes[inner_back].children.begin(), storage_leafnodes[inner_back].children.end(), query_point);
+                        if (iter != storage_leafnodes[inner_back].children.end())
+                        {
+                            return true;
+                        }
+                        inner_back++;
+                    }
+                }
+                else
+                {
+                    return true;
+                }
             }
             else
             {
@@ -324,6 +374,8 @@ namespace ml
                 if (!framework.point_query(query.query_points[i]))
                 {
                     point_not_found++;
+                    // cout << "i :" << i << endl;
+                    // break;
                 }
             }
         }
@@ -979,12 +1031,8 @@ namespace ml
         // generate_points();
         exp_recorder.name = "ML";
         exp_recorder.timer_begin();
-        config::method_pool.insert(pair<int, int>(0, Constants::CL));
-        config::method_pool.insert(pair<int, int>(1, Constants::MR));
-        config::method_pool.insert(pair<int, int>(2, Constants::OG));
-        config::method_pool.insert(pair<int, int>(3, Constants::RL));
-        config::method_pool.insert(pair<int, int>(4, Constants::RS));
-        config::method_pool.insert(pair<int, int>(5, Constants::SP));
+        vector<int> methods{Constants::CL, Constants::MR, Constants::OG, Constants::RL, Constants::RS, Constants::SP};
+        config::init_method_pool(methods);
         framework.point_query_p = point_query;
         framework.window_query_p = window_query;
         framework.knn_query_p = kNN_query;
@@ -997,7 +1045,6 @@ namespace ml
         offsets.resize(k + 1);
         partition_size.resize(k + 1);
         partitions.resize(k);
-        // TODO
         gen_reference_points(exp_recorder);
 
         DataSet<Point, double>::read_data_pointer = read_data;
