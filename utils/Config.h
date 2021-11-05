@@ -24,6 +24,9 @@ namespace config
     int rs_m = 100;
     int cluster_k = 100;
 
+    int cardinality_l = 1e4;
+    int cardinality_u = 1e8;
+
     float lambda = 0.8;
     float query_frequency = 1.0;
 

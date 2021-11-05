@@ -43,8 +43,6 @@ namespace zm
     int page_size = Constants::PAGESIZE;
     int error_shift = 0;
     long long first_key, last_key, gap;
-    int cardinality_l = 1e4;
-    int cardinality_u = 1e8;
 
     vector<Point> read_data(string filename, string delimeter, double &min_x, double &min_y, double &max_x, double &max_y)
     {
@@ -573,7 +571,7 @@ namespace zm
         int bin_num_synthetic = 10;
 
         int N = cardinality_u;
-        int bit_num = 8;
+        // int bit_num = 8;
 
         long max_edge = pow(2, bit_num - 1) - 1;
 

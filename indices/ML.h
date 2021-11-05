@@ -41,8 +41,7 @@ namespace ml
     int page_size = Constants::PAGESIZE;
     int error_shift = 0;
     double first_key = 0, last_key = 0, gap = 0;
-    int cardinality_l = 10000;
-    int cardinality_u = 10000000;
+
 
     int k = 100;
     vector<double> offsets;
@@ -970,7 +969,7 @@ namespace ml
         int bin_num_synthetic = 10;
 
         int N = cardinality_u;
-        int bit_num = 8;
+        // int bit_num = 8;
         // float xs_max[2] = {(float)(N), (float)(N)};
         // float max_key = compute_Z_value(xs_max, 2, bit_num);
 

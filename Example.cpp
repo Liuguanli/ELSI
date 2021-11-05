@@ -23,8 +23,8 @@
 
 #include "indices/ZM.h"
 #include "indices/ML.h"
-// #include "indices/RSMI.h"
-// #include "indices/LISA.h"
+#include "indices/RSMI.h"
+#include "indices/LISA.h"
 #include "ELSI.h"
 
 using namespace std;

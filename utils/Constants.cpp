@@ -20,21 +20,22 @@ const string Constants::INSERTKNN = "insertKnn/";
 const string Constants::INSERTACCKNN = "insertAccKnn/";
 const string Constants::LEARNED_CDF = "learned_cdf/";
 
-const string Constants::PRE_TRAIN_1D_DATA = "/home/liuguanli/Documents/pre_train/1D_data/0.1/";
-const string Constants::FEATURES_PATH_ZM = "/home/liuguanli/Documents/pre_train/features_zm/1/0.1/";
-const string Constants::PRE_TRAIN_MODEL_PATH_ZM = "/home/liuguanli/Documents/pre_train/models_zm/1/0.1/";
+const string Constants::PRE_TRAIN_1D_DATA = "./method_pool/MR/pre_train/1D_data/0.1/";
+const string Constants::FEATURES_PATH_ZM = "./method_pool/MR/pre_train/features_zm/0.1/";
+const string Constants::PRE_TRAIN_MODEL_PATH_ZM = "./method_pool/MR/pre_train/models_zm/0.1/";
 
-const string Constants::PRE_TRAIN_2D_DATA = "/home/liuguanli/Documents/pre_train/2D_data/";
-const string Constants::PRE_TRAIN_MODEL_PATH_RSMI = "/home/liuguanli/Documents/pre_train/models_rsmi/1/";
-const string Constants::FEATURES_PATH_RSMI = "/home/liuguanli/Documents/pre_train/features_rsmi/1/";
+const string Constants::PRE_TRAIN_2D_DATA = "./method_pool/MR/pre_train/2D_data/";
+const string Constants::PRE_TRAIN_MODEL_PATH_RSMI = "./method_pool/MR/pre_train/models_rsmi/";
+const string Constants::FEATURES_PATH_RSMI = "./method_pool/MR/pre_train/features_rsmi/";
 
-const string Constants::DEFAULT_PRE_TRAIN_MODEL_PATH = "/home/liuguanli/Documents/pre_train/models_zm/1/0.1/index_0.pt";
-const string Constants::DEFAULT_PRE_TRAIN_MODEL_PATH_RSMI = "/home/liuguanli/Documents/pre_train/models_rsmi/1/Z/skewed_1000_1_1_.pt";
-const string Constants::DEFAULT_PRE_TRAIN_MODEL_PATH_RSMI_H = "/home/liuguanli/Documents/pre_train/models_rsmi/1/H/skewed_1000_1_1_.pt";
+const string Constants::DEFAULT_PRE_TRAIN_MODEL_PATH = "./method_pool/MR/pre_train/models_zm/0.1/index_0.pt";
+const string Constants::DEFAULT_PRE_TRAIN_MODEL_PATH_RSMI = "./method_pool/MR/pre_train/models_rsmi/Z/skewed_1000_1_1_.pt";
+const string Constants::DEFAULT_PRE_TRAIN_MODEL_PATH_RSMI_H = "./method_pool/MR/pre_train/models_rsmi/H/skewed_1000_1_1_.pt";
 
-const string Constants::CLUSTER_FILE = "/home/liuguanli/Dropbox/research/BASE/method_pool/CL/cluster.py";
-const string Constants::RL_FILE = "/home/liuguanli/Dropbox/research/BASE/method_pool/RL/rl_4_sfc/RL_4_SFC.py";
-const string Constants::RL_FILE_RSMI = "/home/liuguanli/Dropbox/research/BASE/method_pool/RL/rl_4_sfc/RL_4_SFC_RSMI.py";
+// const string Constants::CLUSTER_FILE = "/home/liuguanli/Dropbox/research/BASE/method_pool/CL/cluster.py";
+const string Constants::CLUSTER_FILE = "./method_pool/CL/cluster.py";
+const string Constants::RL_FILE = "./method_pool/RL/rl_4_sfc/RL_4_SFC.py";
+const string Constants::RL_FILE_RSMI = "./method_pool/RL/rl_4_sfc/RL_4_SFC_RSMI.py";
 
 const string Constants::BUILD_TIME_MODEL_PATH = "./data/build_time_model_zm.pt";
 const string Constants::QUERY_TIME_MODEL_PATH = "./data/query_time_model_zm.pt";

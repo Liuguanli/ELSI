@@ -70,6 +70,9 @@ comment *#define use_gpu* to use CPU version
 ```
 
 ### 4. Change path
+
+Change */home/research/datasets/* to the position for data sets.
+
 Change */home/liuguanli/Dropbox/research/BASE/* to your own path for ELSI.
 
 Change */home/liuguanli/Documents/pre_train/* to the position where your store the pre-trained models.

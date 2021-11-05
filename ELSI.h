@@ -62,7 +62,7 @@ public:
     map<int, vector<float>> methods;
     ExpRecorder exp_recorder;
 
-    long max_cardinality = 10000000;
+    long max_cardinality = cardinality_u;
 
     // vector<ExtraStorageBlock<D>> extra_storage;
     vector<LeafNode> extra_storage;
@@ -466,8 +466,8 @@ private:
             DIR *dir;
             dir = opendir(ppath.c_str());
             vector<ScorerItem> records;
-            long shortest_build_time = numeric_limits<long>::max();
-            long shortest_query_time = numeric_limits<long>::max();
+            long og_build_time = numeric_limits<long>::max();
+            long og_query_time = numeric_limits<long>::max();
             while ((ptr = readdir(dir)) != NULL)
             {
                 if (ptr->d_name[0] == '.')
@@ -505,8 +505,12 @@ private:
                         long query_time = exp_recorder.time / dataset.points.size();
                         item.build_time = build_time;
                         item.query_time = query_time;
-                        shortest_build_time = min(shortest_build_time, build_time);
-                        shortest_query_time = min(shortest_query_time, query_time);
+                        if (method == Constants::OG)
+                        {
+                            og_build_time = build_time;
+                            og_query_time = query_time;
+                        }
+
                         records.push_back(item);
                     }
                 }
@@ -519,8 +523,8 @@ private:
             for (size_t i = 0; i < records.size(); i++)
             {
                 records[i].cardinality = (float)records[i].cardinality / max_cardinality;
-                records[i].build_time = (float)shortest_build_time / records[i].build_time;
-                records[i].query_time = (float)shortest_query_time / records[i].query_time;
+                records[i].build_time = (float)og_build_time / records[i].build_time;
+                records[i].query_time = (float)og_query_time / records[i].query_time;
                 parameters.push_back(records[i].cardinality);
                 parameters.push_back(records[i].dist);
                 parameters.insert(parameters.end(), records[i].method.begin(), records[i].method.end());
@@ -542,7 +546,7 @@ private:
             // torch::save(build_cost_model, build_time_model_path);
             // torch::save(query_cost_model, query_time_model_path);
 
-                       int k = 5;
+            int k = 5;
             int parameter_gap = parameters.size() / k;
             int label_gap = build_time_labels.size() / k;
             float loss = numeric_limits<float>::max();
