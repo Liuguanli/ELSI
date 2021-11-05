@@ -20,8 +20,6 @@
 
 (Due to the limitation of Google Drive storage space, only OSM1 and Skewed are shared. If you need Uniform and OSM2, please email me.)
 
-#### Pre-trained Models: 
-
 ### 1. Required libraries
 
 #### LibTorch
