@@ -15,10 +15,10 @@ data/*.csv
 Example.o
 Example
 
-indices/*
-!indices/ZM.h
-!indices/ML.h
-files/*
+# indices/*
+# !indices/ZM.h
+# !indices/ML.h
+# files/*
 
 out.txt
 exp.sh
