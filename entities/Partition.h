@@ -222,6 +222,94 @@ public:
         }
     }
 
+    void build(ExpRecorder &exp_recorder, vector<Point> points, ELSI<Point, long long> &framework)
+    {
+        DataSet<Point, long long> original_data_set;
+        vector<float> locations;
+        vector<float> labels;
+        vector<long long> keys;
+        if (points.size() <= Constants::THRESHOLD)
+        {
+            is_last = true;
+            init_last(points, locations, labels, keys);
+            int method = exp_recorder.build_method;
+            original_data_set.points = points;
+            original_data_set.normalized_keys = locations;
+            original_data_set.keys = keys;
+            original_data_set.labels = labels;
+
+            if (exp_recorder.is_framework)
+            {
+                method = framework.build_predict_method(exp_recorder.upper_level_lambda, query_frequency, original_data_set);
+            }
+
+            exp_recorder.record_method_nums(method);
+
+            std::shared_ptr<MLP> mlp_ = framework.get_build_method(original_data_set, method);
+            int max_error = 0;
+            int min_error = 0;
+            for (size_t i = 0; i < points.size(); i++)
+            {
+                float x1 = (points[i].x - x_0) * x_scale + x_0;
+                float x2 = (points[i].y - y_0) * y_scale + y_0;
+                int predicted_index = (int)(mlp_->predict(x1, x2) * leaf_node_num);
+
+                predicted_index = max(predicted_index, 0);
+                predicted_index = min(predicted_index, leaf_node_num - 1);
+
+                int error = i / page_size - predicted_index;
+                max_error = max(max_error, error);
+                min_error = min(min_error, error);
+            }
+            mlp_->max_error = max_error;
+            mlp_->min_error = min_error;
+            max_error = max_error;
+            min_error = min_error;
+            mlp = mlp_;
+        }
+        else
+        {
+            init(points, locations, labels, keys);
+            map<int, vector<Point>> points_map;
+            original_data_set.points = points;
+            original_data_set.normalized_keys = locations;
+            original_data_set.keys = keys;
+            original_data_set.labels = labels;
+            int method = exp_recorder.build_method;
+            if (exp_recorder.is_framework)
+            {
+                method = framework.build_predict_method(exp_recorder.upper_level_lambda, query_frequency, original_data_set);
+            }
+            exp_recorder.record_method_nums(method);
+            std::shared_ptr<MLP> mlp_ = framework.get_build_method(original_data_set, method);
+
+            for (size_t i = 0; i < points.size(); i++)
+            {
+                float x1 = (points[i].x - x_0) * x_scale + x_0;
+                float x2 = (points[i].y - y_0) * y_scale + y_0;
+                int predicted_index = (int)(mlp_->predict(x1, x2) * width);
+                predicted_index = max(predicted_index, 0);
+                predicted_index = min(predicted_index, width);
+                points_map[predicted_index].push_back(points[i]);
+            }
+
+            mlp = mlp_;
+            map<int, vector<Point>>::iterator iter;
+            iter = points_map.begin();
+
+            while (iter != points_map.end())
+            {
+                if (iter->second.size() > 0)
+                {
+                    Partition partition;
+                    partition.build(exp_recorder, iter->second, framework);
+                    children.insert(pair<int, Partition>(iter->first, partition));
+                }
+                iter++;
+            }
+        }
+    }
+
     bool point_query_bs(Point &query_point)
     {
         // cout << "query_point.curve: " << query_point.key << endl;
@@ -284,7 +372,6 @@ public:
             // predicted_index = (int)(net->predict(query_point, x_scale, y_scale, x_0, y_0) * width);
             // predicted_index = net->predict(query_point, x_scale, y_scale, x_0, y_0) * width;
             predicted_index = mlp->predict(x1, x2) * leaf_node_num;
-
             predicted_index = predicted_index < 0 ? 0 : predicted_index;
             predicted_index = predicted_index >= leaf_node_num ? leaf_node_num - 1 : predicted_index;
             // LeafNode leafnode = leafnodes[predicted_index];
@@ -385,6 +472,228 @@ public:
             predicted_index = min(predicted_index, width);
 
             return children[predicted_index].point_query(query_point);
+        }
+    }
+
+    void window_query(vector<Point> &results, vector<Point> vertexes, Mbr &query_window)
+    {
+        if (is_last)
+        {
+            int leafnodes_size = leafnodes.size();
+            if (leafnodes_size == 0)
+            {
+                return;
+            }
+            int front = leafnodes_size - 1;
+            int back = 0;
+            if (leaf_node_num == 0)
+            {
+                return;
+            }
+            else if (leaf_node_num < 2)
+            {
+                front = 0;
+                back = 0;
+            }
+            else
+            {
+                int max = 0;
+                int min = width;
+                int predicted_index = 0;
+
+                for (size_t i = 0; i < vertexes.size(); i++)
+                {
+                    float x1 = (vertexes[i].x - x_0) * x_scale + x_0;
+                    float x2 = (vertexes[i].y - y_0) * y_scale + y_0;
+                    predicted_index = mlp->predict(x1, x2) * leaf_node_num;
+                    int predicted_index_max = predicted_index + max_error;
+                    int predicted_index_min = predicted_index + min_error;
+                    if (predicted_index_min < min)
+                    {
+                        min = predicted_index_min;
+                    }
+                    if (predicted_index_max > max)
+                    {
+                        max = predicted_index_max;
+                    }
+                }
+                front = min < 0 ? 0 : min;
+                back = max >= leafnodes_size ? leafnodes_size - 1 : max;
+
+                if (back < front)
+                {
+                    return;
+                }
+                // std::cout << "min: " << min << std::endl;
+                // std::cout << "max: " << max << std::endl;
+                // std::cout << "front: " << front << std::endl;
+                // std::cout << "back: " << back << std::endl;
+                // front = min < 0 ? 0 : min;
+                // back = max >= leafnodes_size ? leafnodes_size - 1 : max;
+            }
+            for (size_t i = front; i <= back; i++)
+            {
+                LeafNode leafnode = leafnodes[i];
+                if (leafnode.mbr.interact(query_window))
+                {
+                    for (Point point : leafnode.children)
+                    {
+                        if (!point.is_deleted && query_window.contains(point))
+                        {
+                            results.push_back(point);
+                        }
+                    }
+                }
+            }
+            return;
+        }
+        else
+        {
+            int front = width;
+            int back = 0;
+            for (size_t i = 0; i < vertexes.size(); i++)
+            {
+                int predicted_index = 0;
+                float x1 = (vertexes[i].x - x_0) * x_scale + x_0;
+                float x2 = (vertexes[i].y - y_0) * y_scale + y_0;
+
+                predicted_index = mlp->predict(x1, x2) * width;
+                predicted_index = max(predicted_index, 0);
+                predicted_index = min(predicted_index, width);
+
+                if (predicted_index < front)
+                {
+                    front = predicted_index;
+                }
+                if (predicted_index > back)
+                {
+                    back = predicted_index;
+                }
+            }
+            for (size_t i = front; i <= back; i++)
+            {
+                if (children.count(i) == 0)
+                {
+                    continue;
+                }
+                if (children[i].mbr.interact(query_window))
+                {
+                    children[i].window_query(results, vertexes, query_window);
+                }
+            }
+        }
+    }
+
+    void kNN_query(vector<Point> &results, Point query_point, int k)
+    {
+        priority_queue<Point, vector<Point>, sortForKNN2> pq;
+
+        double rh0 = 1.0;
+        float knnquery_side = sqrt((float)k / N) * rh0;
+        while (true)
+        {
+            Mbr mbr = Mbr::get_mbr(query_point, knnquery_side);
+            vector<Point> vertexes = mbr.get_corner_points();
+            vector<Point> temp_result;
+            window_query(temp_result, vertexes, mbr);
+            if (temp_result.size() >= k)
+            {
+                double dist_furthest = 0;
+                int dist_furthest_i = 0;
+                for (size_t i = 0; i < temp_result.size(); i++)
+                {
+                    double temp_dist = temp_result[i].cal_dist(query_point);
+
+                    temp_result[i].temp_dist = temp_dist;
+                    if (pq.size() < k)
+                    {
+                        pq.push(temp_result[i]);
+                    }
+                    else
+                    {
+                        if (pq.top().temp_dist < temp_dist)
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            pq.pop();
+                            pq.push(temp_result[i]);
+                        }
+                    }
+                }
+
+                if (pq.top().temp_dist <= knnquery_side)
+                {
+                    while (!pq.empty())
+                    {
+                        results.push_back(pq.top());
+                        pq.pop();
+                    }
+
+                    break;
+                }
+            }
+            knnquery_side *= 2;
+        }
+        // return result;
+    }
+
+    void insert(ExpRecorder &exp_recorder, Point point, ELSI<Point, long long> &framework)
+    {
+        if (is_last)
+        {
+            if (N == Constants::THRESHOLD)
+            {
+                is_last = false;
+                vector<Point> points;
+                for (LeafNode leafNode : leafnodes)
+                {
+                    points.insert(points.end(), leafNode.children.begin(), leafNode.children.end());
+                }
+                points.push_back(point);
+                build(exp_recorder, points, framework);
+            }
+            else
+            {
+                int predicted_index = 0;
+                float x1 = (point.x - x_0) * x_scale + x_0;
+                float x2 = (point.y - y_0) * y_scale + y_0;
+                // predicted_index = (int)(net->predict(query_point, x_scale, y_scale, x_0, y_0) * width);
+                // predicted_index = net->predict(query_point, x_scale, y_scale, x_0, y_0) * width;
+                predicted_index = mlp->predict(x1, x2) * leaf_node_num;
+                predicted_index = predicted_index < 0 ? 0 : predicted_index;
+                predicted_index = predicted_index >= leaf_node_num ? leaf_node_num - 1 : predicted_index;
+                LeafNode leafnode = leafnodes[predicted_index];
+                if (leafnode.is_full())
+                {
+                    leafnode.add_point(point);
+                    sort(leafnode.children.begin(), leafnode.children.end(), sort_key());
+                    LeafNode right = leafnode.split();
+                    leafnodes.insert(leafnodes.begin() + predicted_index + 1, right);
+                    min_error--;
+                    max_error++;
+                }
+                {
+                    leafnode.add_point(point);
+                    sort(leafnode.children.begin(), leafnode.children.end(), sort_key());
+                }
+                leaf_node_num++;
+                N++;
+            }
+        }
+        else
+        {
+            int predicted_index = 0;
+            float x1 = (point.x - x_0) * x_scale + x_0;
+            float x2 = (point.y - y_0) * y_scale + y_0;
+
+            predicted_index = mlp->predict(x1, x2) * width;
+
+            predicted_index = max(predicted_index, 0);
+            predicted_index = min(predicted_index, width);
+
+            return children[predicted_index].insert(exp_recorder, point, framework);
         }
     }
 };

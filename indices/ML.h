@@ -378,7 +378,7 @@ namespace ml
                 }
             }
         }
-        cout << "point_not_found: " << point_not_found << endl;
+        // cout << "point_not_found: " << point_not_found << endl;
     }
 
     vector<Point> find_closet_points(Mbr query_window)
@@ -776,7 +776,7 @@ namespace ml
 
         vector<std::shared_ptr<MLP>> temp_index;
         int next_stage_length = dataset.points.size();
-        std::shared_ptr<MLP> mlp = framework.build_with_method(dataset, method);
+        std::shared_ptr<MLP> mlp = framework.get_build_method(dataset, method);
 
         temp_index.push_back(mlp);
         int max_error = 0;
@@ -837,7 +837,7 @@ namespace ml
                     method = framework.build_predict_method(exp_recorder.upper_level_lambda, query_frequency, original_data_set);
                 }
                 exp_recorder.record_method_nums(method);
-                std::shared_ptr<MLP> mlp = framework.build_with_method(original_data_set, method);
+                std::shared_ptr<MLP> mlp = framework.get_build_method(original_data_set, method);
 
                 temp_index.push_back(mlp);
                 int max_error = 0;
@@ -898,7 +898,6 @@ namespace ml
 
     void query(Query<Point> query, ExpRecorder &exp_recorder)
     {
-        print("query--------------------");
         exp_recorder.timer_begin();
         framework.query(query);
         exp_recorder.timer_end();
@@ -909,7 +908,7 @@ namespace ml
             query.results.shrink_to_fit();
             long size = acc_window_query_num(query);
             exp_recorder.accuracy = (float)query_size / size;
-            cout << "accuracy: " << exp_recorder.accuracy << endl;
+            // cout << "accuracy: " << exp_recorder.accuracy << endl;
         }
         if (query.is_knn())
         {
@@ -959,7 +958,7 @@ namespace ml
                 }
             }
             exp_recorder.accuracy = (float)found_num / query.results.size();
-            cout << "accuracy: " << exp_recorder.accuracy << endl;
+            // cout << "accuracy: " << exp_recorder.accuracy << endl;
         }
     }
 

@@ -31,7 +31,7 @@ public:
         dataset.save_temp_data();
         string out_file_name = "./data/generated.csv";
         string commandStr = "python " + Constants::CLUSTER_FILE + " -k " + to_string(k) + " -i " + dataset.path + " -o " + out_file_name;
-        cout << "commandStr: " << commandStr << endl;
+        // cout << "commandStr: " << commandStr << endl;
         char command[1024];
         strcpy(command, commandStr.c_str());
         int res = system(command);
@@ -47,14 +47,17 @@ public:
         dataset.save_temp_data();
         string out_file_name = "./data/generated.csv";
         string commandStr = "python " + Constants::CLUSTER_FILE + " -k " + to_string(k) + " -i " + dataset.path + " -o " + out_file_name;
-        cout << "commandStr: " << commandStr << endl;
+        // cout << "commandStr: " << commandStr << endl;
         char command[1024];
         strcpy(command, commandStr.c_str());
         int res = system(command);
         dataset.remove_temp_data();
-
         DataSet<D, T> generated_dataset(out_file_name);
-        generated_dataset.read_data()->mapping()->generate_normalized_keys()->generate_labels();
+        // generated_dataset.read_data()->mapping()->generate_normalized_keys()->generate_labels();
+        generated_dataset.read_data();
+        generated_dataset.mapping();
+        generated_dataset.generate_normalized_keys();
+        generated_dataset.generate_labels();
         return generated_dataset;
     }
 };

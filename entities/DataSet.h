@@ -47,6 +47,7 @@ public:
 
     DataSet *mapping()
     {
+        // assert(mapping_pointer != NULL);
         if (mapping_pointer != NULL)
         {
             mapping_pointer(points, keys);
@@ -129,7 +130,9 @@ public:
 
     DataSet * read_data()
     {
-        // assert(dataset_name != NULL && dataset_name != "");
+        assert(!dataset_name.empty());
+        assert(read_data_pointer != NULL);
+
         points = read_data_pointer(dataset_name, ",", min_x, min_y, max_x, max_y);
         return this;
     }
@@ -179,6 +182,7 @@ public:
     string path = "./data/temp.csv";
     void save_temp_data()
     {
+        assert(save_data_pointer != NULL);
         save_data_pointer(points, path);
     }
 

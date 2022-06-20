@@ -79,7 +79,7 @@ public:
 
     inline static void load_pre_trained_model(int dimension)
     {
-        print("MR::load_pre_trained_model-->load " + to_string(dimension));
+        // print("MR::load_pre_trained_model-->load " + to_string(dimension));
 
         if (pre_trained_dataset_info.size() > 0)
         {
@@ -130,8 +130,6 @@ public:
             }
         }
 
-        // TODO loading distance!!! 1
-
         if (dimension == 2)
         {
             ppath = Constants::PRE_TRAIN_MODEL_PATH_RSMI + "H/";
@@ -157,9 +155,8 @@ public:
                 }
             }
         }
-
-        cout << "load finish..." << pre_trained_dataset_info.size() << endl;
-        cout << "load finish..." << pre_trained_dataset_info_leafnode.size() << endl;
+        // cout << "load finish..." << pre_trained_dataset_info.size() << endl;
+        // cout << "load finish..." << pre_trained_dataset_info_leafnode.size() << endl;
     }
 
     inline static vector<float> get_cdf(string folder, string file_name)

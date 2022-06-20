@@ -18,7 +18,7 @@ def clock(func):
         return result
     return clocked
 
-@clock
+# @clock
 def load_data(name):
     data = pd.read_csv(name, header=None)
     x = data[0].values.reshape(-1, 1)
@@ -30,7 +30,7 @@ def load_data(name):
 def cluster(x, method):
     return method.fit(x)
 
-@clock
+# @clock
 def test_mini_batch_kmeans_manual(X):
     batch_size = 100000
     n_clusters = 10000
@@ -44,11 +44,10 @@ def test_mini_batch_kmeans_manual(X):
     np.savetxt("/home/research/datasets/OSM_100000000_1_2_minibatchkmeans_manual.csv", kmeans.cluster_centers_, delimiter=",")
 
 
-@clock
+# @clock
 def test_mini_batch_kmeans_auto(X, save_path, n_clusters = 10000):
     batch_size = 100000
     kmeans = MiniBatchKMeans(n_clusters=n_clusters, random_state=0, batch_size=batch_size).fit(X)
-    # print(kmeans.cluster_centers_)
     np.savetxt(save_path, kmeans.cluster_centers_, delimiter=",")
 
 

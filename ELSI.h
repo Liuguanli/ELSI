@@ -70,6 +70,7 @@ public:
     void config_method_pool()
     {
         int pool_size = config::method_pool.size();
+        assert(pool_size > 0);
         for (size_t i = 0; i < pool_size; i++)
         {
             vector<float> one_hot(pool_size);
@@ -85,16 +86,21 @@ public:
 
     void init()
     {
-        status = Constants::STATUS_FRAMEWORK_INIT;
+        // assert((DataSet<Point, long long>::read_data_pointer != NULL));
+        // assert((DataSet<Point, long long>::gen_input_keys_pointer != NULL));
+        // assert((DataSet<Point, long long>::save_data_pointer != NULL));
+        int pool_size = config::method_pool.size();
+        assert(pool_size > 0);
         print("ELSI::init ELSI");
         init_build_processor();
         init_rebuild_processor();
         MR<D, T>::load_pre_trained_model(dimension);
-        status = Constants::STATUS_FRAMEWORK_INIT_DONE;
     }
 
     int build_predict_method(float lambda, float query_frequency, DataSet<D, T> &original_data_set)
     {
+
+        assert(original_data_set.keys.size() > 0);
         int method_pool_size = methods.size();
         DataSetInfo<T> info(Constants::DEFAULT_BIN_NUM, original_data_set.keys);
         float *build_score = new float[method_pool_size];
@@ -129,7 +135,7 @@ public:
         return max_index;
     }
 
-    std::shared_ptr<MLP> build_with_method(DataSet<D, T> &original_data_set, int method_index)
+    std::shared_ptr<MLP> get_build_method(DataSet<D, T> &original_data_set, int method_index)
     {
         DataSet<D, T> shrinked_data_set;
         switch (config::method_pool[method_index])
@@ -219,14 +225,11 @@ public:
             break;
         }
         auto mlp = model_training::real_train(shrinked_data_set.normalized_keys, shrinked_data_set.labels);
-        status = Constants::STATUS_FRAMEWORK_BUILD_DONE;
         return mlp;
     }
 
     void query(Query<D> &query)
     {
-        status = Constants::STATUS_FRAMEWORK_BEGIN_QUERY;
-
         if (query.is_point())
         {
             point_query(query);
@@ -239,17 +242,13 @@ public:
         {
             knn_query(query);
         }
-
-        status = Constants::STATUS_FRAMEWORK_BEGIN_QUERY_DONE;
     }
 
     void point_query(Query<D> &query)
     {
         if (point_query_p != NULL)
         {
-            print("point_query");
             point_query_p(query);
-            print("point_query finish");
         }
     }
 
@@ -302,8 +301,6 @@ public:
     {
         if (window_query_p != NULL)
         {
-            print("window_query");
-
             window_query_p(query);
         }
     }
@@ -341,8 +338,6 @@ public:
     {
         if (knn_query_p != NULL)
         {
-            print("knn_query");
-
             knn_query_p(query);
         }
     }
@@ -443,7 +438,6 @@ public:
 private:
     void init_build_processor()
     {
-        status = Constants::STATUS_FRAMEWORK_INIT_BUILD_PROCESSOR;
         // string build_time_model_path = "/home/liuguanli/Dropbox/shared/VLDB20/codes/rsmi/cost_model/build_time_model_zm.pt";
         // string query_time_model_path = "/home/liuguanli/Dropbox/shared/VLDB20/codes/rsmi/cost_model/query_time_model_zm.pt";
         string build_time_model_path = Constants::BUILD_TIME_MODEL_PATH;
@@ -456,11 +450,12 @@ private:
         {
             torch::load(build_cost_model, build_time_model_path);
             torch::load(query_cost_model, query_time_model_path);
-            print("init_build_processor-->load models finish");
-            status = Constants::STATUS_FRAMEWORK_INIT_BUILD_PROCESSOR_LOAD_DONE;
+            print("LOAD BUILD MODULE---------------DONE");
         }
         else
         {
+            print("TRAIN BUILD MODULE---------------START");
+
             string ppath = Constants::SYNTHETIC_DATA_PATH;
             struct dirent *ptr;
             DIR *dir;
@@ -657,14 +652,12 @@ private:
                 }
             }
             torch::save(query_cost_model, query_time_model_path);
-
-            status = Constants::STATUS_FRAMEWORK_INIT_BUILD_PROCESSOR_TRAIN_DONE;
+            print("TRAIN BUILD MODULE---------------DONE");
         }
     }
 
     void init_rebuild_processor()
     {
-        status = Constants::STATUS_FRAMEWORK_INIT_REBUILD_PROCESSOR;
         string raw_data_path = Constants::REBUILD_RAW_DATA_PATH;
         string path = Constants::REBUILD_DATA_PATH;
         string rebuild_model_path = Constants::REBUILD_MODEL_PATH;
@@ -672,12 +665,11 @@ private:
         if (fin_rebuild)
         {
             torch::load(rebuild_model, rebuild_model_path);
-            print("init_rebuild_processor-->load model finish");
-            status = Constants::STATUS_FRAMEWORK_INIT_REBUILD_PROCESSOR_LOAD_DONE;
+            print("LOAD REBUILD MODULE---------------DONE");
         }
         else
         {
-            print("init rebuild models");
+            print("TRAIN REBUILD MODEL---------------START");
             string ppath = Constants::SYNTHETIC_DATA_PATH;
             struct dirent *ptr;
             DIR *dir;
@@ -709,7 +701,6 @@ private:
                     dataset.read_data()->mapping()->generate_normalized_keys()->generate_labels();
                     init_storage_p(dataset);
 
-                    // TODO generate synthetic points
                     long base = max_cardinality / 100;
                     for (size_t i = 0; i < 9; i++)
                     {
@@ -750,10 +741,10 @@ private:
                         point_query_p(point_query);
                         exp_recorder.timer_end();
                         long after_insert_query_time = exp_recorder.time / dataset.points.size();
-                        cout << "(float)(statistics.inserted + statistics.deleted) : " << (float)(statistics.inserted + statistics.deleted) << endl;
-                        cout << "dataset.points.size() : " << dataset.points.size() << endl;
-                        cout << "before_insert_query_time: " << before_insert_query_time << endl;
-                        cout << "after_insert_query_time: " << after_insert_query_time << endl;
+                        // cout << "(float)(statistics.inserted + statistics.deleted) : " << (float)(statistics.inserted + statistics.deleted) << endl;
+                        // cout << "dataset.points.size() : " << dataset.points.size() << endl;
+                        // cout << "before_insert_query_time: " << before_insert_query_time << endl;
+                        // cout << "after_insert_query_time: " << after_insert_query_time << endl;
                         statistics.is_rebuild = ((float)after_insert_query_time / before_insert_query_time) > 1.1;
                         cout << statistics.statistics_to_string() << endl;
                         records.push_back(statistics);
@@ -762,7 +753,6 @@ private:
                 }
             }
 
-            // TODO setup extra storage and query methods.!
             vector<float> parameters;
             vector<float> labels;
 
@@ -782,9 +772,8 @@ private:
 #endif
             rebuild_model->train_model(parameters, labels);
             torch::save(rebuild_model, rebuild_model_path);
+            print("TRAIN REBUILD MODEL---------------DONE");
         }
-
-        status = Constants::STATUS_FRAMEWORK_INIT_REBUILD_PROCESSOR_TRAIN_DONE;
     }
 };
 

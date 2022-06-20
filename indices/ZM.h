@@ -388,7 +388,7 @@ namespace zm
 
         vector<std::shared_ptr<MLP>> temp_index;
         int next_stage_length = dataset.points.size();
-        std::shared_ptr<MLP> mlp = framework.build_with_method(dataset, method);
+        std::shared_ptr<MLP> mlp = framework.get_build_method(dataset, method);
 
         temp_index.push_back(mlp);
         int max_error = 0;
@@ -448,7 +448,7 @@ namespace zm
                 }
                 exp_recorder.record_method_nums(method);
                 method = Constants::CL;
-                std::shared_ptr<MLP> mlp = framework.build_with_method(original_data_set, method);
+                std::shared_ptr<MLP> mlp = framework.get_build_method(original_data_set, method);
 
                 temp_index.push_back(mlp);
                 int max_error = 0;
@@ -483,12 +483,10 @@ namespace zm
             index.push_back(temp_index);
         }
         exp_recorder.timer_end();
-        print("build time:" + to_string(exp_recorder.time / 1e9) + " s");
     }
 
-    void query(Query<Point> query, ExpRecorder &exp_recorder)
+    void query(Query<Point> &query, ExpRecorder &exp_recorder)
     {
-        print("query--------------------");
         exp_recorder.timer_begin();
         framework.query(query);
         exp_recorder.timer_end();
@@ -662,7 +660,7 @@ namespace zm
         DataSet<Point, long long>::mapping_pointer = mapping;
         DataSet<Point, long long>::save_data_pointer = save_data;
 
-        stages.push_back(1);
+        // stages.push_back(1);
 
         if (exp_recorder.is_framework)
         {
@@ -685,7 +683,7 @@ namespace zm
         print("mapping data time:" + to_string((int)(exp_recorder.time / 1e9)) + "s");
 
         N = dataset.points.size();
-        // stages.push_back(N / Constants::THRESHOLD);
+        
         init_underlying_data_storage(dataset);
         exp_recorder.timer_end();
         print("data init time:" + to_string((int)(exp_recorder.time / 1e9)) + "s");

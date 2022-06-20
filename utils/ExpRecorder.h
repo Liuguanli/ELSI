@@ -177,6 +177,26 @@ public:
         time = chrono::duration_cast<chrono::nanoseconds>(finish - start).count();
     }
 
+    long time_to_second()
+    {
+        time /= 1e9;
+        return time;
+    }
+
+    long time_to_millisecond()
+    {
+        time /= 1e6;
+        return time;
+    }
+
+    long time_to_microsecond()
+    {
+        time /= 1e3;
+        return time;
+    }
+
+    
+
     string get_file_name()
     {
         return distribution + "_" + to_string(dataset_cardinality) + "_" + to_string(skewness);

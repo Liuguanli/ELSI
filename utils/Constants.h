@@ -5,23 +5,6 @@ using namespace std;
 class Constants
 {
 public:
-    // status
-    static const int STATUS_FRAMEWORK_INIT = 0;
-    static const int STATUS_FRAMEWORK_INIT_DONE = 1;
-    static const int STATUS_FRAMEWORK_INIT_BUILD_PROCESSOR = 2;
-    static const int STATUS_FRAMEWORK_INIT_BUILD_PROCESSOR_LOAD_DONE = 3;
-    static const int STATUS_FRAMEWORK_INIT_BUILD_PROCESSOR_TRAIN_DONE = 4;
-
-    static const int STATUS_FRAMEWORK_INIT_REBUILD_PROCESSOR = 5;
-    static const int STATUS_FRAMEWORK_INIT_REBUILD_PROCESSOR_LOAD_DONE = 6;
-    static const int STATUS_FRAMEWORK_INIT_REBUILD_PROCESSOR_TRAIN_DONE = 7;
-
-    static const int STATUS_FRAMEWORK_BUILD = 8;
-    static const int STATUS_FRAMEWORK_BUILD_DONE = 9;
-
-    static const int STATUS_FRAMEWORK_BEGIN_QUERY = 10;
-    static const int STATUS_FRAMEWORK_BEGIN_QUERY_DONE = 11;
-
     static const int DEFAULT_BIN_NUM = 100;
     static const int CLUSTER_K = 100;
 
