@@ -118,7 +118,7 @@ public:
         return this;
     }
 
-    DataSet * generate_labels()
+    DataSet *generate_labels()
     {
         int N = points.size();
         for (size_t i = 0; i < N; i++)
@@ -128,7 +128,7 @@ public:
         return this;
     }
 
-    DataSet * read_data()
+    DataSet *read_data()
     {
         assert(!dataset_name.empty());
         assert(read_data_pointer != NULL);

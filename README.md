@@ -33,6 +33,7 @@ For GPU version, choose according to your setup.
 
 homepage: https://www.boost.org/
 
+
 ### 2. Change Makefile
 
 Choose CPU or GPU
@@ -54,7 +55,7 @@ else
 endif
 ```
 
-### 3. Change Exp.cpp
+### 3. Choose CPU ov GPU version
 
 comment *#define use_gpu* to use CPU version
 
@@ -64,6 +65,7 @@ comment *#define use_gpu* to use CPU version
 .
 .
 .
+// Example.cpp
 #endif  // use_gpu
 ```
 
@@ -84,3 +86,37 @@ const string Constants::PRE_TRAIN_1D_DATA = "/home/liuguanli/Documents/pre_train
 const string Constants::RL_FILE = "/home/liuguanli/Dropbox/research/BASE/method_pool/RL/rl_4_sfc/RL_4_SFC.py";
 ```
 
+### 5. Index integration 
+
+Config method pool
+
+init method poll
+```C++
+vector<int> methods{Constants::CL, Constants::MR, Constants::OG, Constants::RL, Constants::RS, Constants::SP};
+config::init_method_pool(methods);
+
+ELSI<Point, long long> framework;
+framework.config_method_pool();
+```
+
+init framework poll
+```C++
+ELSI<Point, long long> framework;
+framework.config_method_pool();
+
+// cf. ELSI.h
+framework.dimension = 1;
+framework.point_query_p = point_query;
+framework.window_query_p = window_query;
+framework.knn_query_p = kNN_query;
+framework.build_index_p = build_index;
+framework.init_storage_p = init_underlying_data_storage;
+framework.insert_p = insert;
+framework.remove_p = remove;
+framework.generate_points_p = generate_points;
+
+// cf. DataSet.h
+DataSet<Point, long long>::read_data_pointer = read_data;
+DataSet<Point, long long>::mapping_pointer = mapping;
+DataSet<Point, long long>::save_data_pointer = save_data;
+```
