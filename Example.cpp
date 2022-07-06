@@ -423,15 +423,4 @@ int main(int argc, char **argv)
     }
 }
 
-// TODO ML insert
-// ELSI query , window query, knn query
-// RSMI point query, window query, knn query
-// LISA check nonotony
-// ### 5. TODO
-// - [x] Add data sets
-// - [ ] Add pre-trained models
-// - [ ] Add comments for key steps
-// - [ ] Clean up codes
-// - [ ] Add config for each EXP
-// - [x] Make dynamic model input
 #endif // use_gpu
