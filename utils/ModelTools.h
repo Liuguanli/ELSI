@@ -430,7 +430,7 @@ public:
         return res;
     }
 
-    void train_model(vector<float> &locations, vector<float> &labels)
+    void train_model(vector<float> locations, vector<float> labels)
     {
 
         long long N = labels.size();

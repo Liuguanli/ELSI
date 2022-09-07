@@ -4,7 +4,6 @@
 #include <string>
 #include "../utils/Constants.h"
 #include "../entities/Mbr.h"
-#include "../utils/ExpRecorder.h"
 
 using namespace std;
 
@@ -20,7 +19,6 @@ private:
     int iteration_num = 1;
 
 public:
-    ExpRecorder exp_recorder;
     vector<D> query_points;
     vector<D> knn_query_points;
     vector<Mbr> query_windows;

@@ -5,7 +5,7 @@
 namespace model_training
 {
     template <typename K, typename L>
-    std::shared_ptr<MLP> real_train(vector<K> &keys, vector<L> &labels)
+    std::shared_ptr<MLP> real_train(vector<K> keys, vector<L> labels)
     {
         int width = keys.size() / labels.size();
         auto mlp = std::make_shared<MLP>(width);

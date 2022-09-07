@@ -132,8 +132,7 @@ public:
                 max_index = i;
             }
         }
-        // return max_index;
-        return Constants::SP;
+        return max_index;
     }
 
     std::shared_ptr<MLP> get_build_method(DataSet<D, T> &original_data_set, int method_index)

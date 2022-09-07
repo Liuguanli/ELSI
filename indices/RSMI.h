@@ -133,15 +133,14 @@ namespace rsmi
 
     void window_query(Query<Point> &query)
     {
+
         query.results.clear();
         query.results.shrink_to_fit();
         int query_num = query.query_windows.size();
         for (size_t i = 0; i < query_num; i++)
         {
             vector<Point> vertexes = query.query_windows[i].get_corner_points();
-            // root.window_query(query.results, vertexes, query.query_windows[i]);
-            root.window_query_acc(query, vertexes, query.query_windows[i]);
-            // root.window_query(query, vertexes, query.query_windows[i]);
+            root.window_query(query.results, vertexes, query.query_windows[i]);
             // cout << "results.size():" << query.results.size() << endl;
         }
     }
@@ -164,6 +163,7 @@ namespace rsmi
 
     Partition build_single_RSMI(ExpRecorder &exp_recorder, DataSet<Point, long long> &dataset)
     {
+
         Partition partition;
         DataSet<Point, long long> original_data_set;
         vector<float> locations;
@@ -213,7 +213,7 @@ namespace rsmi
         root.insert(exp_recorder, point, framework);
     }
 
-    void build_RSMI(ExpRecorder &exp_recorder, vector<Point> &points)
+    void build_RSMI(ExpRecorder &exp_recorder, vector<Point> points)
     {
         root.build(exp_recorder, points, framework);
     }
@@ -221,7 +221,6 @@ namespace rsmi
     void query(Query<Point> &query, ExpRecorder &exp_recorder)
     {
         exp_recorder.timer_begin();
-        query.exp_recorder = exp_recorder;
         framework.query(query);
         exp_recorder.timer_end();
     }

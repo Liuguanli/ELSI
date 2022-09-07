@@ -74,39 +74,7 @@ using namespace zm;
 //     }
 //     return keys;
 // }
-vector<string> paths_osm{
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/1/1000/1_1/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/1/1000/1_4/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/1/1000/1_16/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/1/1000/1_64/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/1/1000/1_256/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/2/1000/1_1/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/2/1000/1_4/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/2/1000/1_16/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/2/1000/1_64/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/2/1000/1_256/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/3/1000/1_1/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/3/1000/1_4/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/3/1000/1_16/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/3/1000/1_64/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/3/1000/1_256/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/4/1000/1_1/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/4/1000/1_4/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/4/1000/1_16/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/4/1000/1_64/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/4/1000/1_256/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/5/1000/1_1/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/5/1000/1_4/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/5/1000/1_16/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/5/1000/1_64/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/5/1000/1_256/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/1/1000/4_64/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/1/1000/16_16/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/1/1000/64_4/windows.csv",
-    // "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/1/1000/256_1/windows.csv",
-    "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/mix/1/windows.csv",
-    "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/mix/2/windows.csv",
-    "/home/liuguanli/Dropbox/research/VLDB23/code/windows/2/mix/3/windows.csv"};
+
 void parse(int argc, char **argv, ExpRecorder &exp_recorder)
 {
     int c;
@@ -199,7 +167,6 @@ void test_ZM(ExpRecorder &exp_recorder)
     FileWriter file_writer;
     zm::init(dataset_name, exp_recorder);
     stages.push_back(1);
-    stages.push_back(sqrt(zm::dataset.points.size() / Constants::THRESHOLD));
     stages.push_back(zm::dataset.points.size() / Constants::THRESHOLD);
 
     zm::build_ZM(exp_recorder);
@@ -215,40 +182,26 @@ void test_ZM(ExpRecorder &exp_recorder)
     cout << "point query time:" << exp_recorder.time << endl;
     file_writer.write_point_query(exp_recorder);
 
-    for (size_t i = 0; i < paths_osm.size(); i++)
+    vector<Mbr> mbrs = mbrs_map[to_string(areas[2]) + to_string(ratios[2])];
+    query.set_window_query()->query_windows = mbrs;
+    // ->set_query_windows(mbrs);
+    zm::query(query, exp_recorder);
+    exp_recorder.time /= query_num;
+    print("window query time:" + to_string(exp_recorder.time) + " ns");
+    file_writer.write_window_query(exp_recorder);
+
+    vector<Point> knn_query_points;
+    for (int i = 0; i < query_num; i++)
     {
-        FileReader reader(paths_osm[i], ",");
-        cout << paths_osm[i] << endl;
-        vector<Mbr> mbrs = reader.get_mbrs();
-        if (mbrs.size() == 0)
-        {
-            continue;
-        }
-        query.set_window_query()->query_windows = mbrs;
-        zm::query(query, exp_recorder);
-        print("window query time:" + to_string(exp_recorder.time) + " ns");
-        print("window query page_access:" + to_string(query.exp_recorder.page_access));
-        file_writer.write_window_query(exp_recorder);
+        int index = rand() % zm::dataset.points.size();
+        knn_query_points.push_back(zm::dataset.points[index]);
     }
-
-    // vector<Mbr> mbrs = mbrs_map[to_string(areas[2]) + to_string(ratios[2])];
-    // query.set_window_query()->query_windows = mbrs;
-    // zm::query(query, exp_recorder);
-    // exp_recorder.time /= query_num;
-    // print("window query time:" + to_string(exp_recorder.time) + " ns");
-    // file_writer.write_window_query(exp_recorder);
-
-    // vector<Point> knn_query_points;
-    // for (int i = 0; i < query_num; i++)
-    // {
-    //     int index = rand() % zm::dataset.points.size();
-    //     knn_query_points.push_back(zm::dataset.points[index]);
-    // }
-    // query.set_knn_query()->set_k(25)->knn_query_points = knn_query_points;
-    // zm::query(query, exp_recorder);
-    // exp_recorder.time /= query_num;
-    // print("knn query time:" + to_string(exp_recorder.time) + " ns");
-    // file_writer.write_kNN_query(exp_recorder);
+    query.set_knn_query()->set_k(25)->knn_query_points = knn_query_points;
+    // set_knn_query_points(knn_query_points)->
+    zm::query(query, exp_recorder);
+    exp_recorder.time /= query_num;
+    print("knn query time:" + to_string(exp_recorder.time) + " ns");
+    file_writer.write_kNN_query(exp_recorder);
 }
 
 void test_ML_single(ExpRecorder &exp_recorder)
@@ -275,25 +228,25 @@ void test_ML(ExpRecorder &exp_recorder)
     print("point query time:" + to_string(exp_recorder.time) + " ns");
     file_writer.write_point_query(exp_recorder);
 
-    // vector<Mbr> mbrs = mbrs_map[to_string(areas[2]) + to_string(ratios[2])];
-    // query.set_window_query()->query_windows = mbrs;
-    // ml::query(query, exp_recorder);
-    // exp_recorder.time /= query_num;
-    // print("window query time:" + to_string(exp_recorder.time) + " ns");
-    // file_writer.write_window_query(exp_recorder);
+    vector<Mbr> mbrs = mbrs_map[to_string(areas[2]) + to_string(ratios[2])];
+    query.set_window_query()->query_windows = mbrs;
+    ml::query(query, exp_recorder);
+    exp_recorder.time /= query_num;
+    print("window query time:" + to_string(exp_recorder.time) + " ns");
+    file_writer.write_window_query(exp_recorder);
 
-    // vector<Point> knn_query_points;
-    // for (int i = 0; i < query_num; i++)
-    // {
-    //     int index = rand() % ml::dataset.points.size();
-    //     knn_query_points.push_back(ml::dataset.points[index]);
-    //     // break;
-    // }
-    // query.set_knn_query()->set_k(25)->knn_query_points = knn_query_points;
-    // ml::query(query, exp_recorder);
-    // exp_recorder.time /= query_num;
-    // print("knn query time:" + to_string(exp_recorder.time) + " ns");
-    // file_writer.write_kNN_query(exp_recorder);
+    vector<Point> knn_query_points;
+    for (int i = 0; i < query_num; i++)
+    {
+        int index = rand() % ml::dataset.points.size();
+        knn_query_points.push_back(ml::dataset.points[index]);
+        // break;
+    }
+    query.set_knn_query()->set_k(25)->knn_query_points = knn_query_points;
+    ml::query(query, exp_recorder);
+    exp_recorder.time /= query_num;
+    print("knn query time:" + to_string(exp_recorder.time) + " ns");
+    file_writer.write_kNN_query(exp_recorder);
 }
 
 void test_RSMI_single(ExpRecorder &exp_recorder)
@@ -358,47 +311,30 @@ void test_RSMI(ExpRecorder &exp_recorder)
     print("build time:" + to_string(exp_recorder.time) + " s");
 
     Query<Point> query;
-    // query.set_point_query()->query_points = rsmi::dataset.points;
-    // rsmi::query(query, exp_recorder);
-    // exp_recorder.time /= rsmi::N;
-    // cout << "point query time:" << exp_recorder.time << endl;
-    // file_writer.write_point_query(exp_recorder);
+    query.set_point_query()->query_points = rsmi::dataset.points;
+    rsmi::query(query, exp_recorder);
+    exp_recorder.time /= rsmi::N;
+    cout << "point query time:" << exp_recorder.time << endl;
+    file_writer.write_point_query(exp_recorder);
 
-    for (size_t i = 0; i < paths_osm.size(); i++)
+    vector<Mbr> mbrs = mbrs_map[to_string(areas[2]) + to_string(ratios[2])];
+    query.set_window_query()->query_windows = mbrs;
+    rsmi::query(query, exp_recorder);
+    exp_recorder.time /= query_num;
+    print("window query time:" + to_string(exp_recorder.time) + " ns");
+    file_writer.write_window_query(exp_recorder);
+
+    vector<Point> knn_query_points;
+    for (int i = 0; i < query_num; i++)
     {
-        FileReader reader(paths_osm[i], ",");
-        cout << paths_osm[i] << endl;
-        vector<Mbr> mbrs = reader.get_mbrs();
-        if (mbrs.size() == 0)
-        {
-            continue;
-        }
-        query.set_window_query()->query_windows = mbrs;
-        rsmi::query(query, exp_recorder);
-        print("mbrs.size():" + to_string(mbrs.size()));
-        print("window query time:" + to_string(exp_recorder.time) + " ns");
-        print("window query page_access:" + to_string(query.exp_recorder.page_access));
-        file_writer.write_window_query(exp_recorder);
+        int index = rand() % rsmi::dataset.points.size();
+        knn_query_points.push_back(rsmi::dataset.points[index]);
     }
-
-    // vector<Mbr> mbrs = mbrs_map[to_string(areas[2]) + to_string(ratios[2])];
-    // query.set_window_query()->query_windows = mbrs;
-    // rsmi::query(query, exp_recorder);
-    // exp_recorder.time /= query_num;
-    // print("window query time:" + to_string(exp_recorder.time) + " ns");
-    // file_writer.write_window_query(exp_recorder);
-
-    // vector<Point> knn_query_points;
-    // for (int i = 0; i < query_num; i++)
-    // {
-    //     int index = rand() % rsmi::dataset.points.size();
-    //     knn_query_points.push_back(rsmi::dataset.points[index]);
-    // }
-    // query.set_knn_query()->set_k(25)->knn_query_points = knn_query_points;
-    // rsmi::query(query, exp_recorder);
-    // exp_recorder.time /= query_num;
-    // print("knn query time:" + to_string(exp_recorder.time) + " ns");
-    // file_writer.write_kNN_query(exp_recorder);
+    query.set_knn_query()->set_k(25)->knn_query_points = knn_query_points;
+    rsmi::query(query, exp_recorder);
+    exp_recorder.time /= query_num;
+    print("knn query time:" + to_string(exp_recorder.time) + " ns");
+    file_writer.write_kNN_query(exp_recorder);
 }
 
 void test_LISA_single(ExpRecorder &exp_recorder)
@@ -425,26 +361,25 @@ void test_LISA(ExpRecorder &exp_recorder)
     cout << "point query time:" << exp_recorder.time << endl;
     file_writer.write_point_query(exp_recorder);
 
-    // vector<Mbr> mbrs = mbrs_map[to_string(areas[2]) + to_string(ratios[2])];
-    // query.set_window_query()->query_windows = mbrs;
-    // lisa::query(query, exp_recorder);
-    // exp_recorder.time /= query_num;
-    // print("window query time:" + to_string(exp_recorder.time) + " ns");
-    // file_writer.write_window_query(exp_recorder);
+    vector<Mbr> mbrs = mbrs_map[to_string(areas[2]) + to_string(ratios[2])];
+    query.set_window_query()->query_windows = mbrs;
+    lisa::query(query, exp_recorder);
+    exp_recorder.time /= query_num;
+    print("window query time:" + to_string(exp_recorder.time) + " ns");
+    file_writer.write_window_query(exp_recorder);
 
-    // vector<Point> knn_query_points;
-    // for (int i = 0; i < query_num; i++)
-    // {
-    //     int index = rand() % lisa::dataset.points.size();
-    //     knn_query_points.push_back(lisa::dataset.points[index]);
-    // }
-    // query.set_knn_query()->set_k(25)->knn_query_points = knn_query_points;
-    // lisa::query(query, exp_recorder);
-    // exp_recorder.time /= query_num;
-    // print("knn query time:" + to_string(exp_recorder.time) + " ns");
-    // file_writer.write_kNN_query(exp_recorder);
+    vector<Point> knn_query_points;
+    for (int i = 0; i < query_num; i++)
+    {
+        int index = rand() % lisa::dataset.points.size();
+        knn_query_points.push_back(lisa::dataset.points[index]);
+    }
+    query.set_knn_query()->set_k(25)->knn_query_points = knn_query_points;
+    lisa::query(query, exp_recorder);
+    exp_recorder.time /= query_num;
+    print("knn query time:" + to_string(exp_recorder.time) + " ns");
+    file_writer.write_kNN_query(exp_recorder);
 }
-float sampling_rates[] = {0.0001, 0.001, 0.01};
 
 int main(int argc, char **argv)
 {
@@ -459,18 +394,10 @@ int main(int argc, char **argv)
         test_ZM(exp_recorder);
         break;
     case 2:
-        for (size_t i = 0; i < 3; i++)
-        {
-            config::sampling_rate = sampling_rates[i];
-            test_LISA(exp_recorder);
-        }
+        test_LISA(exp_recorder);
         break;
     case 3:
-        for (size_t i = 0; i < 3; i++)
-        {
-            config::sampling_rate = sampling_rates[i];
-            test_ML(exp_recorder);
-        }
+        test_ML(exp_recorder);
         break;
     case 4:
         test_RSMI(exp_recorder);
