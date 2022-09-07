@@ -26,19 +26,29 @@ public:
 
     DataSet<D, T> do_sp(DataSet<D, T> &data_set, float sampling_rate)
     {
+
         vector<D> points;
         int sample_gap = 1 / sampling_rate;
         long long counter = 0;
         // int start = (rand() % (sample_gap));
         int start = 0;
         int count = data_set.points.size();
+
+        // int random_size = ceil(count / sample_gap);
+        // while (random_size >= 0)
+        // {
+        //     int random_index = (std::rand() % count);
+        //     points.push_back(data_set.points[random_index]);
+        //     random_size--;
+        // }
+
         for (size_t i = start; i < count; i += sample_gap)
         {
             points.push_back(data_set.points[i]);
         }
+
         DataSet<D, T> sampled_data_set(points);
         sampled_data_set.read_keys_and_labels();
-        cout << "size sp:" << sampled_data_set.points.size() << endl;
         return sampled_data_set;
     }
 
@@ -52,6 +62,19 @@ public:
         // int start = (rand() % (sample_gap));
         int start = 0;
         int count = data_set.points.size();
+
+        int random_size = ceil(count * sampling_rate);
+        
+        // while (random_size > 0)
+        // {
+        //     int random_index = (std::rand() % count);
+        //     points.push_back(data_set.points[random_index]);
+        //     normalized_keys.push_back(data_set.normalized_keys[2 * random_index]);
+        //     normalized_keys.push_back(data_set.normalized_keys[2 * random_index + 1]);
+        //     labels.push_back(data_set.labels[random_index]);
+        //     random_size--;
+        // }
+
         for (size_t i = start; i < count; i += sample_gap)
         {
             points.push_back(data_set.points[i]);
@@ -63,7 +86,7 @@ public:
         sampled_data_set.points = points;
         sampled_data_set.normalized_keys = normalized_keys;
         sampled_data_set.labels = labels;
-        cout << "size sp:" << sampled_data_set.points.size() << endl;
+        // cout << "size sp:" << sampled_data_set.points.size() << endl;
         return sampled_data_set;
     }
 };

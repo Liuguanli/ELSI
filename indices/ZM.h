@@ -138,7 +138,8 @@ namespace zm
         for (int j = 0; j < level - 1; j++)
         {
             next_stage_length = stages[j + 1];
-            predicted_index = index[j][predicted_index]->predict_ZM(key) * next_stage_length;
+
+            predicted_index = index[j][predicted_index]->predict_ZM(normalized_key) * next_stage_length;
             predicted_index = max(predicted_index, 0);
             predicted_index = min(predicted_index, next_stage_length - 1);
         }
@@ -146,9 +147,11 @@ namespace zm
         next_stage_length = N;
         min_error = index[level - 1][predicted_index]->min_error;
         max_error = index[level - 1][predicted_index]->max_error;
-        predicted_index = index[level - 1][predicted_index]->predict_ZM(key) * next_stage_length;
+        predicted_index = index[level - 1][predicted_index]->predict_ZM(normalized_key) * next_stage_length;
         predicted_index = max(predicted_index, 0);
         predicted_index = min(predicted_index, next_stage_length - 1);
+
+        // print("predicted_index:" + str(predicted_index) + " min_error:" + str(min_error) + " max_error:" + str(max_error));
 
         front = predicted_index + min_error - error_shift;
         front = min(N - 1, max((long)0, front));
@@ -205,7 +208,7 @@ namespace zm
         }
     }
 
-    void window_query(vector<Point> &results, Mbr &query_window)
+    void window_query(Query<Point> &query, Mbr &query_window)
     {
         vector<Point> vertexes = query_window.get_corner_points();
         vector<long> indices;
@@ -219,15 +222,17 @@ namespace zm
         sort(indices.begin(), indices.end());
         long front = indices.front();
         long back = indices.back();
+        // print("from:" + str(front) + " to:" + str(back) + " N:" + str(N));
         for (size_t j = front; j <= back; j++)
         {
             if (storage_leafnodes[j].mbr.interact(query_window))
             {
+                query.exp_recorder.page_access++;
                 for (Point point : storage_leafnodes[j].children)
                 {
                     if (!point.is_deleted && query_window.contains(point))
                     {
-                        results.push_back(point);
+                        query.results.push_back(point);
                     }
                 }
             }
@@ -236,13 +241,14 @@ namespace zm
 
     void window_query(Query<Point> &query)
     {
+        print("ZM::window_query");
         query.results.clear();
         query.results.shrink_to_fit();
         int point_not_found = 0;
         int query_num = query.query_windows.size();
         for (size_t i = 0; i < query_num; i++)
         {
-            window_query(query.results, query.query_windows[i]);
+            window_query(query, query.query_windows[i]);
         }
     }
 
@@ -447,7 +453,7 @@ namespace zm
                     method = framework.build_predict_method(exp_recorder.upper_level_lambda, query_frequency, original_data_set);
                 }
                 exp_recorder.record_method_nums(method);
-                method = Constants::CL;
+                // method = Constants::SP;
                 std::shared_ptr<MLP> mlp = framework.get_build_method(original_data_set, method);
 
                 temp_index.push_back(mlp);
@@ -487,6 +493,7 @@ namespace zm
 
     void query(Query<Point> &query, ExpRecorder &exp_recorder)
     {
+        query.exp_recorder = exp_recorder;
         exp_recorder.timer_begin();
         framework.query(query);
         exp_recorder.timer_end();
@@ -499,6 +506,7 @@ namespace zm
                 {
                     if (storage_leafnodes[j].mbr.interact(query.query_windows[i]))
                     {
+                        // exp_recorder.page_access++;
                         for (Point point : storage_leafnodes[j].children)
                         {
                             if (query.query_windows[i].contains(point))
@@ -683,7 +691,7 @@ namespace zm
         print("mapping data time:" + to_string((int)(exp_recorder.time / 1e9)) + "s");
 
         N = dataset.points.size();
-        
+
         init_underlying_data_storage(dataset);
         exp_recorder.timer_end();
         print("data init time:" + to_string((int)(exp_recorder.time / 1e9)) + "s");

@@ -19,7 +19,7 @@
 namespace config
 {
     map<int, int> method_pool;
-    float sampling_rate = 0.0001;
+    float sampling_rate = 0.01;
     int bit_num = 8;
     int rs_m = 100;
     int cluster_k = 100;
@@ -37,7 +37,6 @@ namespace config
             method_pool.insert(pair<int, int>(i, methods[i]));
         }
     }
-
 }
 
 #endif

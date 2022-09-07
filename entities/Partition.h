@@ -18,7 +18,7 @@ class Partition
 {
 
 private:
-    int level;
+    int level = 0;
     int index;
     long long N = 0;
     int bit_num;
@@ -47,8 +47,8 @@ public:
     static string model_path_root;
     map<int, Partition> children;
     vector<LeafNode> leafnodes;
-    vector<float> points_x;
-    vector<float> points_y;
+    // vector<float> points_x;
+    // vector<float> points_y;
 
     Partition() {}
 
@@ -222,7 +222,7 @@ public:
         }
     }
 
-    void build(ExpRecorder &exp_recorder, vector<Point> points, ELSI<Point, long long> &framework)
+    void build(ExpRecorder &exp_recorder, vector<Point> &points, ELSI<Point, long long> &framework)
     {
         DataSet<Point, long long> original_data_set;
         vector<float> locations;
@@ -231,12 +231,13 @@ public:
         if (points.size() <= Constants::THRESHOLD)
         {
             is_last = true;
-            init_last(points, locations, labels, keys);
+            // init_last(points, locations, labels, keys);
+            init_last(points, original_data_set.normalized_keys, original_data_set.labels, original_data_set.keys);
             int method = exp_recorder.build_method;
             original_data_set.points = points;
-            original_data_set.normalized_keys = locations;
-            original_data_set.keys = keys;
-            original_data_set.labels = labels;
+            // original_data_set.normalized_keys = locations;
+            // original_data_set.keys = keys;
+            // original_data_set.labels = labels;
 
             if (exp_recorder.is_framework)
             {
@@ -269,44 +270,67 @@ public:
         }
         else
         {
-            init(points, locations, labels, keys);
+            // init(points, locations, labels, keys);
+            init(points, original_data_set.normalized_keys, original_data_set.labels, original_data_set.keys);
             map<int, vector<Point>> points_map;
             original_data_set.points = points;
-            original_data_set.normalized_keys = locations;
-            original_data_set.keys = keys;
-            original_data_set.labels = labels;
+            // original_data_set.normalized_keys = locations;
+            // original_data_set.keys = keys;
+            // original_data_set.labels = labels;
             int method = exp_recorder.build_method;
             if (exp_recorder.is_framework)
             {
                 method = framework.build_predict_method(exp_recorder.upper_level_lambda, query_frequency, original_data_set);
             }
             exp_recorder.record_method_nums(method);
-            std::shared_ptr<MLP> mlp_ = framework.get_build_method(original_data_set, method);
-
-            for (size_t i = 0; i < points.size(); i++)
+            bool is_retrain = true;
+            do
             {
-                float x1 = (points[i].x - x_0) * x_scale + x_0;
-                float x2 = (points[i].y - y_0) * y_scale + y_0;
-                int predicted_index = (int)(mlp_->predict(x1, x2) * width);
-                predicted_index = max(predicted_index, 0);
-                predicted_index = min(predicted_index, width);
-                points_map[predicted_index].push_back(points[i]);
-            }
+                std::shared_ptr<MLP> mlp_ = framework.get_build_method(original_data_set, method);
 
-            mlp = mlp_;
-            map<int, vector<Point>>::iterator iter;
-            iter = points_map.begin();
-
-            while (iter != points_map.end())
-            {
-                if (iter->second.size() > 0)
+                for (size_t i = 0; i < points.size(); i++)
                 {
-                    Partition partition;
-                    partition.build(exp_recorder, iter->second, framework);
-                    children.insert(pair<int, Partition>(iter->first, partition));
+                    float x1 = (points[i].x - x_0) * x_scale + x_0;
+                    float x2 = (points[i].y - y_0) * y_scale + y_0;
+                    int predicted_index = (int)(mlp_->predict(x1, x2) * width);
+                    predicted_index = max(predicted_index, 0);
+                    predicted_index = min(predicted_index, width);
+                    points_map[predicted_index].push_back(points[i]);
                 }
-                iter++;
-            }
+
+                mlp = mlp_;
+                map<int, vector<Point>>::iterator iter;
+                iter = points_map.begin();
+
+                while (iter != points_map.end())
+                {
+                    if (iter->second.size() > 0)
+                    {
+                        Partition partition;
+                        partition.build(exp_recorder, iter->second, framework);
+                        children.insert(pair<int, Partition>(iter->first, partition));
+                    }
+                    iter++;
+                }
+
+                int map_size = 0;
+                map<int, vector<Point>>::iterator iter1;
+
+                iter1 = points_map.begin();
+                while (iter1 != points_map.end())
+                {
+                    if (iter1->second.size() > 0)
+                    {
+                        map_size++;
+                        if (map_size == 2)
+                        {
+                            is_retrain = false;
+                            break;
+                        }
+                    }
+                    iter1++;
+                }
+            } while (is_retrain);
         }
     }
 
@@ -475,7 +499,67 @@ public:
         }
     }
 
-    void window_query(vector<Point> &results, vector<Point> vertexes, Mbr &query_window)
+    void window_query_acc(Query<Point> &query, vector<Point> vertexes, Mbr &query_window)
+    {
+        if (is_last)
+        {
+            int leafnodes_size = leafnodes.size();
+            for (size_t i = 0; i < leafnodes_size; i++)
+            {
+                LeafNode leafnode = leafnodes[i];
+                if (leafnode.mbr.interact(query_window))
+                {
+                    query.exp_recorder.page_access++;
+                    for (Point point : leafnode.children)
+                    {
+                        if (!point.is_deleted && query_window.contains(point))
+                        {
+                            query.results.push_back(point);
+                        }
+                    }
+                }
+            }
+            return;
+        }
+        else
+        {
+            int front = width;
+            int back = 0;
+            for (size_t i = 0; i < vertexes.size(); i++)
+            {
+                int predicted_index = 0;
+                float x1 = (vertexes[i].x - x_0) * x_scale + x_0;
+                float x2 = (vertexes[i].y - y_0) * y_scale + y_0;
+
+                predicted_index = mlp->predict(x1, x2) * width;
+                predicted_index = max(predicted_index, 0);
+                predicted_index = min(predicted_index, width);
+
+                if (predicted_index < front)
+                {
+                    front = predicted_index;
+                }
+                if (predicted_index > back)
+                {
+                    back = predicted_index;
+                }
+            }
+            for (size_t i = front; i <= back; i++)
+            {
+                if (children.count(i) == 0)
+                {
+                    continue;
+                }
+                if (children[i].mbr.interact(query_window))
+                {
+                    query.exp_recorder.page_access++;
+                    children[i].window_query_acc(query, vertexes, query_window);
+                }
+            }
+        }
+    }
+
+    void window_query(Query<Point> &query, vector<Point> vertexes, Mbr &query_window)
     {
         if (is_last)
         {
@@ -536,11 +620,12 @@ public:
                 LeafNode leafnode = leafnodes[i];
                 if (leafnode.mbr.interact(query_window))
                 {
+                    query.exp_recorder.page_access++;
                     for (Point point : leafnode.children)
                     {
                         if (!point.is_deleted && query_window.contains(point))
                         {
-                            results.push_back(point);
+                            query.results.push_back(point);
                         }
                     }
                 }
@@ -578,7 +663,8 @@ public:
                 }
                 if (children[i].mbr.interact(query_window))
                 {
-                    children[i].window_query(results, vertexes, query_window);
+                    query.exp_recorder.page_access++;
+                    children[i].window_query(query, vertexes, query_window);
                 }
             }
         }
@@ -595,7 +681,9 @@ public:
             Mbr mbr = Mbr::get_mbr(query_point, knnquery_side);
             vector<Point> vertexes = mbr.get_corner_points();
             vector<Point> temp_result;
-            window_query(temp_result, vertexes, mbr);
+            Query<Point> query;
+            window_query(query, vertexes, mbr);
+            temp_result = query.results;
             if (temp_result.size() >= k)
             {
                 double dist_furthest = 0;

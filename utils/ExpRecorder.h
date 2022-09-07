@@ -68,7 +68,7 @@ public:
     long delete_time;
     long long rebuild_time;
     int rebuild_num;
-    double page_access = 1.0;
+    double page_access = 0.0;
     double accuracy;
     long size;
     long top_rl_time;
@@ -91,7 +91,7 @@ public:
     int rs_threshold_m = 10000;
     double model_reuse_threshold = 0.1;
 
-    int build_method = Constants::OG;
+    int build_method = Constants::SP;
 
     string cluster_method = "kmeans";
     int cluster_size = 100;
