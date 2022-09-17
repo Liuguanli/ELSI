@@ -126,23 +126,29 @@ namespace rsmi
             if (!root.point_query(query_points[i]))
             {
                 point_not_found++;
+                // cout << i << " " << query_points[i].x << " " << query_points[i].y <<endl;
+                // break;
             }
         }
-        // cout << "point_not_found: " << point_not_found << endl;
+        cout << "point_not_found: " << point_not_found << endl;
     }
 
     void window_query(Query<Point> &query)
     {
-
         query.results.clear();
         query.results.shrink_to_fit();
         int query_num = query.query_windows.size();
+        long long res_num = 0;
         for (size_t i = 0; i < query_num; i++)
         {
             vector<Point> vertexes = query.query_windows[i].get_corner_points();
             root.window_query(query.results, vertexes, query.query_windows[i]);
-            // cout << "results.size():" << query.results.size() << endl;
+            res_num += query.results.size();
+            query.results.clear();
+            query.results.shrink_to_fit();
         }
+        cout << "window_query result num: " << res_num << endl;
+
     }
 
     void kNN_query(Query<Point> &query)
@@ -213,8 +219,9 @@ namespace rsmi
         root.insert(exp_recorder, point, framework);
     }
 
-    void build_RSMI(ExpRecorder &exp_recorder, vector<Point> points)
+    void build_RSMI(ExpRecorder &exp_recorder, vector<Point> &points)
     {
+
         root.build(exp_recorder, points, framework);
     }
 

@@ -5,6 +5,7 @@ torch_models_zm/*
 Exp
 *.sh
 files/*
+RSTree13.1/*
 datasets/*
 
 # pre_train/*
@@ -20,5 +21,5 @@ Example
 # !indices/ML.h
 # files/*
 
-out.txt
+*.txt
 exp.sh

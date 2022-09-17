@@ -46,8 +46,8 @@ namespace lisa
     int n_parts = 240;
     // int n_parts = 1;
     float eta = 0.01;
-    int n_models = 200;
-    // int n_models = 1000;
+    // int n_models = 200;
+    int n_models = 1000;
     float max_value_x = 1.0;
     int shard_id = 0;
     int page_id = 0;
@@ -304,7 +304,7 @@ namespace lisa
                 }
             }
         }
-        // cout << "point_not_found: " << point_not_found << endl;
+        cout << "point_not_found: " << point_not_found << endl;
     }
 
     void window_query(Mbr query_window, int partition_index, vector<Point> &result)
@@ -392,6 +392,8 @@ namespace lisa
         for (size_t i = 0; i < query_num; i++)
         {
             window_query(query.query_windows[i], -1, query.results);
+            query.results.clear();
+            query.results.shrink_to_fit();
         }
     }
 
@@ -512,6 +514,14 @@ namespace lisa
             {
                 method = Constants::OG;
             }
+            if (exp_recorder.is_single_build)
+            {
+                method = exp_recorder.build_method;
+            }
+            if (exp_recorder.is_original)
+            {
+                method = Constants::OG;
+            }
 
             exp_recorder.record_method_nums(method);
 
@@ -561,72 +571,72 @@ namespace lisa
         exp_recorder.timer_begin();
         framework.query(query);
         exp_recorder.timer_end();
-        if (query.is_window())
-        {
-            long res_size = 0;
-            if (exp_recorder.distribution == "OSM")
-            {
-                res_size = 823500207;
-            }
-            if (exp_recorder.distribution == "SA")
-            {
-                res_size = 844801538;
-            }
-            if (exp_recorder.distribution == "uniform")
-            {
-                res_size = 12798879;
-            }
-            if (exp_recorder.distribution == "skewed")
-            {
-                res_size = 85430460;
-            }
+        // if (query.is_window())
+        // {
+        //     long res_size = 0;
+        //     if (exp_recorder.distribution == "OSM")
+        //     {
+        //         res_size = 823500207;
+        //     }
+        //     if (exp_recorder.distribution == "SA")
+        //     {
+        //         res_size = 844801538;
+        //     }
+        //     if (exp_recorder.distribution == "uniform")
+        //     {
+        //         res_size = 12798879;
+        //     }
+        //     if (exp_recorder.distribution == "skewed")
+        //     {
+        //         res_size = 85430460;
+        //     }
 
-            // cout << "window query size: " << query.results.size() << endl;
-            exp_recorder.accuracy = (float)query.results.size() / res_size;
-            // cout << "accuracy: " << exp_recorder.accuracy << endl;
-        }
-        if (query.is_knn())
-        {
-            vector<Point> res;
-            // cout << "knn query size: " << query.results.size() << endl;
-            int found_num = 0;
-            for (size_t i = 0; i < query.knn_query_points.size(); i++)
-            {
-                priority_queue<Point, vector<Point>, sortForKNN2> pq;
-                int k = query.get_k();
+        //     // cout << "window query size: " << query.results.size() << endl;
+        //     exp_recorder.accuracy = (float)query.results.size() / res_size;
+        //     // cout << "accuracy: " << exp_recorder.accuracy << endl;
+        // }
+        // if (query.is_knn())
+        // {
+        //     vector<Point> res;
+        //     // cout << "knn query size: " << query.results.size() << endl;
+        //     int found_num = 0;
+        //     for (size_t i = 0; i < query.knn_query_points.size(); i++)
+        //     {
+        //         priority_queue<Point, vector<Point>, sortForKNN2> pq;
+        //         int k = query.get_k();
 
-                for (size_t j = 0; j < dataset.points.size(); j++)
-                {
-                    Point point = dataset.points[j];
-                    point.temp_dist = point.cal_dist(query.knn_query_points[i]);
-                    if (pq.size() < k)
-                    {
-                        pq.push(point);
-                    }
-                    else
-                    {
-                        if (pq.top().temp_dist > point.temp_dist)
-                        {
-                            pq.pop();
-                            pq.push(point);
-                        }
-                    }
-                }
-                vector<Point> query_res(query.results.begin() + i * k, query.results.begin() + i * k + k);
-                while (!pq.empty())
-                {
-                    vector<Point>::iterator iter = find(query_res.begin(), query_res.end(), pq.top());
-                    if (iter != query_res.end())
-                    {
-                        found_num++;
-                    }
+        //         for (size_t j = 0; j < dataset.points.size(); j++)
+        //         {
+        //             Point point = dataset.points[j];
+        //             point.temp_dist = point.cal_dist(query.knn_query_points[i]);
+        //             if (pq.size() < k)
+        //             {
+        //                 pq.push(point);
+        //             }
+        //             else
+        //             {
+        //                 if (pq.top().temp_dist > point.temp_dist)
+        //                 {
+        //                     pq.pop();
+        //                     pq.push(point);
+        //                 }
+        //             }
+        //         }
+        //         vector<Point> query_res(query.results.begin() + i * k, query.results.begin() + i * k + k);
+        //         while (!pq.empty())
+        //         {
+        //             vector<Point>::iterator iter = find(query_res.begin(), query_res.end(), pq.top());
+        //             if (iter != query_res.end())
+        //             {
+        //                 found_num++;
+        //             }
 
-                    pq.pop();
-                }
-            }
-            exp_recorder.accuracy = (float)found_num / query.results.size();
-            // cout << "accuracy: " << exp_recorder.accuracy << endl;
-        }
+        //             pq.pop();
+        //         }
+        //     }
+        //     exp_recorder.accuracy = (float)found_num / query.results.size();
+        //     // cout << "accuracy: " << exp_recorder.accuracy << endl;
+        // }
     }
 
     // TODO opt

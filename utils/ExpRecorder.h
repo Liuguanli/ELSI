@@ -36,6 +36,9 @@ public:
     bool is_framework = false;
     bool is_update = false;
     bool is_rebuildable = false;
+    bool is_original = false;
+
+    bool is_single_build = false;
 
     string name;
 

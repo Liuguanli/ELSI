@@ -75,61 +75,6 @@ using namespace zm;
 //     return keys;
 // }
 
-void parse(int argc, char **argv, ExpRecorder &exp_recorder)
-{
-    int c;
-    static struct option long_options[] =
-        {
-            {"cardinality", required_argument, NULL, 'c'},
-            {"distribution", required_argument, NULL, 'd'},
-            {"skewness", required_argument, NULL, 's'},
-            {"lambda", required_argument, NULL, 'l'},
-            {"name", required_argument, NULL, 'n'},
-            {"is_framework", no_argument, NULL, 'f'},
-            {"update", no_argument, NULL, 'u'},
-        };
-
-    while (1)
-    {
-        int opt_index = 0;
-        c = getopt_long(argc, argv, "c:d:s:l:n:fu:r", long_options, &opt_index);
-
-        if (-1 == c)
-        {
-            break;
-        }
-        switch (c)
-        {
-        case 'c':
-            exp_recorder.dataset_cardinality = atoll(optarg);
-            break;
-        case 'd':
-            exp_recorder.distribution = optarg;
-            break;
-        case 's':
-            exp_recorder.skewness = atoi(optarg);
-            break;
-        case 'l':
-            exp_recorder.upper_level_lambda = atof(optarg);
-            exp_recorder.lower_level_lambda = atof(optarg);
-            break;
-        case 'n':
-            exp_recorder.name = optarg;
-            break;
-        case 'f':
-            exp_recorder.is_framework = true;
-            break;
-        case 'u':
-            exp_recorder.is_update = true;
-            exp_recorder.insert_points_distribution = optarg;
-            break;
-        case 'r':
-            exp_recorder.is_rebuildable = true;
-            break;
-        }
-    }
-}
-
 float areas[] = {0.000006, 0.000025, 0.0001, 0.0004, 0.0016};
 float ratios[] = {0.25, 0.5, 1, 2, 4};
 int methods[6] = {Constants::MR, Constants::CL, Constants::RS, Constants::RL, Constants::SP, Constants::OG};
@@ -137,7 +82,7 @@ int window_length = sizeof(areas) / sizeof(areas[0]);
 int ratio_length = sizeof(ratios) / sizeof(ratios[0]);
 int query_num = 1000;
 
-void get_mbrs(map<string, vector<Mbr>> &mbrs_map, ExpRecorder &exp_recorder)
+void get_mbrs(map<string, vector<Mbr>> &mbrs_map, ExpRecorder &exp_recorder, vector<Point> &points)
 {
     FileReader query_filereader;
 
@@ -148,7 +93,27 @@ void get_mbrs(map<string, vector<Mbr>> &mbrs_map, ExpRecorder &exp_recorder)
             exp_recorder.window_size = areas[i];
             exp_recorder.window_ratio = ratios[j];
             vector<Mbr> mbrs = query_filereader.get_mbrs(exp_recorder.get_query_mbrs_name(), ",");
+            if (mbrs.size() == 0)
+            {
+                break;
+            }
             mbrs_map.insert(pair<string, vector<Mbr>>(to_string(areas[i]) + to_string(ratios[j]), mbrs));
+        }
+    }
+    if (mbrs_map.size() == 0)
+    {
+        FileWriter query_file_writer(Constants::QUERYPROFILES);
+
+        for (size_t i = 0; i < window_length; i++)
+        {
+            for (size_t j = 0; j < ratio_length; j++)
+            {
+                exp_recorder.window_size = areas[i];
+                exp_recorder.window_ratio = ratios[j];
+                vector<Mbr> mbrs = Mbr::get_mbrs(points, exp_recorder.window_size, query_num, exp_recorder.window_ratio);
+                query_file_writer.write_mbrs(mbrs, exp_recorder);
+                mbrs_map.insert(pair<string, vector<Mbr>>(to_string(areas[i]) + to_string(ratios[j]), mbrs));
+            }
         }
     }
 }
@@ -160,12 +125,15 @@ void test_ZM_single(ExpRecorder &exp_recorder)
 void test_ZM(ExpRecorder &exp_recorder)
 {
     print("");
-    map<string, vector<Mbr>> mbrs_map;
-    get_mbrs(mbrs_map, exp_recorder);
+
     string dataset_name = exp_recorder.get_dataset_name();
     print("dataset_name:" + dataset_name);
     FileWriter file_writer;
     zm::init(dataset_name, exp_recorder);
+
+    map<string, vector<Mbr>> mbrs_map;
+    get_mbrs(mbrs_map, exp_recorder, zm::dataset.points);
+
     stages.push_back(1);
     stages.push_back(zm::dataset.points.size() / Constants::THRESHOLD);
 
@@ -211,22 +179,24 @@ void test_ML_single(ExpRecorder &exp_recorder)
 void test_ML(ExpRecorder &exp_recorder)
 {
     map<string, vector<Mbr>> mbrs_map;
-    get_mbrs(mbrs_map, exp_recorder);
     string dataset_name = exp_recorder.get_dataset_name();
     print("dataset_name:" + dataset_name);
     FileWriter file_writer;
     ml::init(dataset_name, exp_recorder);
+    get_mbrs(mbrs_map, exp_recorder, ml::dataset.points);
 
     ml::build_ML(exp_recorder);
     exp_recorder.time /= 1e9;
+    print("build time:" + to_string(exp_recorder.time) + " s");
+
     file_writer.write_build(exp_recorder);
 
     Query<Point> query;
-    query.set_point_query()->query_points = ml::dataset.points;
-    ml::query(query, exp_recorder);
-    exp_recorder.time /= ml::N;
-    print("point query time:" + to_string(exp_recorder.time) + " ns");
-    file_writer.write_point_query(exp_recorder);
+    // query.set_point_query()->query_points = ml::dataset.points;
+    // ml::query(query, exp_recorder);
+    // exp_recorder.time /= ml::N;
+    // print("point query time:" + to_string(exp_recorder.time) + " ns");
+    // file_writer.write_point_query(exp_recorder);
 
     vector<Mbr> mbrs = mbrs_map[to_string(areas[2]) + to_string(ratios[2])];
     query.set_window_query()->query_windows = mbrs;
@@ -252,7 +222,6 @@ void test_ML(ExpRecorder &exp_recorder)
 void test_RSMI_single(ExpRecorder &exp_recorder)
 {
     map<string, vector<Mbr>> mbrs_map;
-    get_mbrs(mbrs_map, exp_recorder);
     string dataset_name = exp_recorder.get_dataset_name();
     print("dataset_name:" + dataset_name);
     FileWriter file_writer;
@@ -262,17 +231,18 @@ void test_RSMI_single(ExpRecorder &exp_recorder)
     {
         exp_recorder.build_method = methods[i];
         rsmi::init(dataset_name, exp_recorder);
+        get_mbrs(mbrs_map, exp_recorder, rsmi::dataset.points);
         rsmi::root = rsmi::build_single_RSMI(exp_recorder, rsmi::dataset);
         exp_recorder.timer_end();
         print("build time:" + to_string(exp_recorder.time_to_second()) + " s");
         // file_writer.write_build(exp_recorder);
 
         Query<Point> query;
-        query.set_point_query()->query_points = rsmi::dataset.points;
-        rsmi::query(query, exp_recorder);
-        exp_recorder.time /= rsmi::N;
-        print("query time:" + to_string(exp_recorder.time) + " ns");
-        file_writer.write_point_query(exp_recorder);
+        // query.set_point_query()->query_points = rsmi::dataset.points;
+        // rsmi::query(query, exp_recorder);
+        // exp_recorder.time /= rsmi::N;
+        // print("query time:" + to_string(exp_recorder.time) + " ns");
+        // file_writer.write_point_query(exp_recorder);
 
         vector<Mbr> mbrs = mbrs_map[to_string(areas[2]) + to_string(ratios[2])];
         query.set_window_query()->query_windows = mbrs;
@@ -298,24 +268,25 @@ void test_RSMI_single(ExpRecorder &exp_recorder)
 void test_RSMI(ExpRecorder &exp_recorder)
 {
     map<string, vector<Mbr>> mbrs_map;
-    get_mbrs(mbrs_map, exp_recorder);
     string dataset_name = exp_recorder.get_dataset_name();
     print("dataset_name:" + dataset_name);
     FileWriter file_writer;
 
     exp_recorder.build_method = Constants::MR;
     rsmi::init(dataset_name, exp_recorder);
+    get_mbrs(mbrs_map, exp_recorder, rsmi::dataset.points);
+
     rsmi::build_RSMI(exp_recorder, rsmi::dataset.points);
     exp_recorder.timer_end();
     exp_recorder.time /= 1e9;
     print("build time:" + to_string(exp_recorder.time) + " s");
 
     Query<Point> query;
-    query.set_point_query()->query_points = rsmi::dataset.points;
-    rsmi::query(query, exp_recorder);
-    exp_recorder.time /= rsmi::N;
-    cout << "point query time:" << exp_recorder.time << endl;
-    file_writer.write_point_query(exp_recorder);
+    // query.set_point_query()->query_points = rsmi::dataset.points;
+    // rsmi::query(query, exp_recorder);
+    // exp_recorder.time /= rsmi::N;
+    // cout << "point query time:" << exp_recorder.time << endl;
+    // file_writer.write_point_query(exp_recorder);
 
     vector<Mbr> mbrs = mbrs_map[to_string(areas[2]) + to_string(ratios[2])];
     query.set_window_query()->query_windows = mbrs;
@@ -344,22 +315,30 @@ void test_LISA_single(ExpRecorder &exp_recorder)
 void test_LISA(ExpRecorder &exp_recorder)
 {
     map<string, vector<Mbr>> mbrs_map;
-    get_mbrs(mbrs_map, exp_recorder);
     string dataset_name = exp_recorder.get_dataset_name();
     print("dataset_name:" + dataset_name);
     FileWriter file_writer;
 
     lisa::init(dataset_name, exp_recorder);
+    get_mbrs(mbrs_map, exp_recorder, lisa::dataset.points);
+
+    vector<Point> knn_query_points;
+    for (int i = 0; i < query_num; i++)
+    {
+        int index = rand() % lisa::dataset.points.size();
+        knn_query_points.push_back(lisa::dataset.points[index]);
+    }
+
     lisa::build_LISA(exp_recorder);
     exp_recorder.time /= 1e9;
     file_writer.write_build(exp_recorder);
 
     Query<Point> query;
-    query.set_point_query()->query_points = lisa::dataset.points;
-    lisa::query(query, exp_recorder);
-    exp_recorder.time /= lisa::N;
-    cout << "point query time:" << exp_recorder.time << endl;
-    file_writer.write_point_query(exp_recorder);
+    // query.set_point_query()->query_points = lisa::dataset.points;
+    // lisa::query(query, exp_recorder);
+    // exp_recorder.time /= lisa::N;
+    // cout << "point query time:" << exp_recorder.time << endl;
+    // file_writer.write_point_query(exp_recorder);
 
     vector<Mbr> mbrs = mbrs_map[to_string(areas[2]) + to_string(ratios[2])];
     query.set_window_query()->query_windows = mbrs;
@@ -368,17 +347,73 @@ void test_LISA(ExpRecorder &exp_recorder)
     print("window query time:" + to_string(exp_recorder.time) + " ns");
     file_writer.write_window_query(exp_recorder);
 
-    vector<Point> knn_query_points;
-    for (int i = 0; i < query_num; i++)
-    {
-        int index = rand() % lisa::dataset.points.size();
-        knn_query_points.push_back(lisa::dataset.points[index]);
-    }
     query.set_knn_query()->set_k(25)->knn_query_points = knn_query_points;
     lisa::query(query, exp_recorder);
     exp_recorder.time /= query_num;
     print("knn query time:" + to_string(exp_recorder.time) + " ns");
     file_writer.write_kNN_query(exp_recorder);
+}
+
+void parse(int argc, char **argv, ExpRecorder &exp_recorder)
+{
+    int c;
+    static struct option long_options[] =
+        {
+            {"cardinality", required_argument, NULL, 'c'},
+            {"distribution", required_argument, NULL, 'd'},
+            {"skewness", required_argument, NULL, 's'},
+            {"lambda", required_argument, NULL, 'l'},
+            {"name", required_argument, NULL, 'n'},
+            {"is_framework", no_argument, NULL, 'f'},
+            {"update", no_argument, NULL, 'u'},
+        };
+
+    while (1)
+    {
+        int opt_index = 0;
+        c = getopt_long(argc, argv, "c:d:s:l:n:fu:rob:", long_options, &opt_index);
+
+        if (-1 == c)
+        {
+            break;
+        }
+        switch (c)
+        {
+        case 'c':
+            exp_recorder.dataset_cardinality = atoll(optarg);
+            break;
+        case 'd':
+            exp_recorder.distribution = optarg;
+            break;
+        case 's':
+            exp_recorder.skewness = atoi(optarg);
+            break;
+        case 'l':
+            exp_recorder.upper_level_lambda = atof(optarg);
+            exp_recorder.lower_level_lambda = atof(optarg);
+            break;
+        case 'n':
+            exp_recorder.name = optarg;
+            break;
+        case 'f':
+            exp_recorder.is_framework = true;
+            break;
+        case 'u':
+            exp_recorder.is_update = true;
+            exp_recorder.insert_points_distribution = optarg;
+            break;
+        case 'r':
+            exp_recorder.is_rebuildable = true;
+            break;
+        case 'o':
+            exp_recorder.is_original = true;
+            break;
+        case 'b':
+            exp_recorder.is_single_build = true;
+            exp_recorder.build_method = atoi(optarg);
+            break;
+        }
+    }
 }
 
 int main(int argc, char **argv)

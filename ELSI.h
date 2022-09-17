@@ -102,36 +102,48 @@ public:
 
         assert(original_data_set.keys.size() > 0);
         int method_pool_size = methods.size();
+
         DataSetInfo<T> info(Constants::DEFAULT_BIN_NUM, original_data_set.keys);
+
         float *build_score = new float[method_pool_size];
         float *query_score = new float[method_pool_size];
         float max = numeric_limits<float>::min();
         int max_index = 0;
+
         float distribution = info.get_distribution();
+
         vector<float> parameters;
         parameters.push_back((float)original_data_set.keys.size() / max_cardinality);
         parameters.push_back(distribution);
+
         for (size_t i = 0; i < method_pool_size; i++)
         {
             vector<float> temp = parameters;
+
             temp.insert(temp.end(), methods[i].begin(), methods[i].end());
+
 #ifdef use_gpu
             torch::Tensor x = torch::tensor(temp, at::kCUDA).reshape({1, 8});
+
             build_cost_model->to(torch::kCUDA);
             query_cost_model->to(torch::kCUDA);
 #else
             torch::Tensor x = torch::tensor(temp).reshape({1, 8});
 #endif
+
             build_score[i] = build_cost_model->predict(x).item().toFloat();
+            
             query_score[i] = query_cost_model->predict(x).item().toFloat();
 
             float score = build_score[i] * lambda + query_score[i] * query_frequency * (1 - lambda);
+
             if (score > max)
             {
                 max = score;
                 max_index = i;
             }
         }
+
         return max_index;
     }
 

@@ -73,7 +73,7 @@ namespace zm
     void mapping(vector<Point> &points, vector<long long> &keys)
     {
         N = points.size();
-        index_bit_num = ceil((log(N)) / log(2));
+        index_bit_num = ceil((log(N)) / log(2)) * 2;
         // cout << "index_bit_num:" << index_bit_num << endl;
         for (long i = 0; i < N; i++)
         {
@@ -138,7 +138,7 @@ namespace zm
         for (int j = 0; j < level - 1; j++)
         {
             next_stage_length = stages[j + 1];
-            predicted_index = index[j][predicted_index]->predict_ZM(key) * next_stage_length;
+            predicted_index = index[j][predicted_index]->predict_ZM(normalized_key) * next_stage_length;
             predicted_index = max(predicted_index, 0);
             predicted_index = min(predicted_index, next_stage_length - 1);
         }
@@ -146,7 +146,7 @@ namespace zm
         next_stage_length = N;
         min_error = index[level - 1][predicted_index]->min_error;
         max_error = index[level - 1][predicted_index]->max_error;
-        predicted_index = index[level - 1][predicted_index]->predict_ZM(key) * next_stage_length;
+        predicted_index = index[level - 1][predicted_index]->predict_ZM(normalized_key) * next_stage_length;
         predicted_index = max(predicted_index, 0);
         predicted_index = min(predicted_index, next_stage_length - 1);
 
@@ -155,9 +155,6 @@ namespace zm
         back = predicted_index + max_error + error_shift;
         back = min(N - 1, back);
 
-        front = front / page_size;
-        back = back / page_size;
-
         return predicted_index;
     }
 
@@ -165,6 +162,10 @@ namespace zm
     {
         long front = 0, back = 0;
         int predicted_index = get_point_index(query_point, front, back);
+        front = front / page_size;
+        back = back / page_size;
+        front = max((long)0, --front);
+        back = min(++back, (long)storage_leafnodes.size() - 1);
         while (front <= back)
         {
             int mid = (front + back) / 2;
@@ -174,7 +175,21 @@ namespace zm
             if (first_curve_val <= query_point.key && query_point.key <= last_curve_val)
             {
                 vector<Point>::iterator iter = find(storage_leafnodes[mid].children.begin(), storage_leafnodes[mid].children.end(), query_point);
-                return iter != storage_leafnodes[mid].children.end();
+                if (iter != storage_leafnodes[mid].children.end())
+                {
+                    return true;
+                }
+                else
+                {
+                    if (first_curve_val == query_point.key)
+                    {
+                        back = mid - 1;
+                    }
+                    if (query_point.key == last_curve_val)
+                    {
+                        front = mid + 1;
+                    }
+                }
             }
             else
             {
@@ -200,9 +215,13 @@ namespace zm
         {
             if (!point_query(query.query_points[i]))
             {
-                point_not_found++;
+                if (!framework.point_query(query.query_points[i]))
+                {
+                    point_not_found++;
+                }
             }
         }
+        printf("point_not_found %d\n", point_not_found);
     }
 
     void window_query(vector<Point> &results, Mbr &query_window)
@@ -213,6 +232,12 @@ namespace zm
         {
             long index_low = 0, index_high = 0;
             get_point_index(point, index_low, index_high);
+
+            index_low = index_low / page_size;
+            index_high = index_high / page_size;
+            index_low = max((long)0, --index_low);
+            index_high = min(++index_high, (long)storage_leafnodes.size() - 1);
+
             indices.push_back(index_low);
             indices.push_back(index_high);
         }
@@ -446,8 +471,16 @@ namespace zm
                 {
                     method = framework.build_predict_method(exp_recorder.upper_level_lambda, query_frequency, original_data_set);
                 }
+                if (exp_recorder.is_single_build)
+                {
+                    method = exp_recorder.build_method;
+                }
+                if (exp_recorder.is_original)
+                {
+                    method = Constants::OG;
+                }
+
                 exp_recorder.record_method_nums(method);
-                method = Constants::CL;
                 std::shared_ptr<MLP> mlp = framework.get_build_method(original_data_set, method);
 
                 temp_index.push_back(mlp);
@@ -683,7 +716,7 @@ namespace zm
         print("mapping data time:" + to_string((int)(exp_recorder.time / 1e9)) + "s");
 
         N = dataset.points.size();
-        
+
         init_underlying_data_storage(dataset);
         exp_recorder.timer_end();
         print("data init time:" + to_string((int)(exp_recorder.time / 1e9)) + "s");

@@ -42,7 +42,6 @@ namespace ml
     int error_shift = 0;
     double first_key = 0, last_key = 0, gap = 0;
 
-
     int k = 100;
     vector<double> offsets;
     vector<int> partition_size;
@@ -77,13 +76,13 @@ namespace ml
 
     void gen_reference_points(ExpRecorder &exp_recorder)
     {
-        string python_path = "/home/liuguanli/Dropbox/shared/VLDB20/codes/rsmi/cluster/cluster.py";
+        string python_path = "./method_pool/CL/cluster.py";
         string result_points_path = "/home/research/datasets/" + exp_recorder.get_file_name() + "_k_" + to_string(k) + "_minibatchkmeans_auto.csv";
-        // string commandStr = "python " + python_path + " -d " + exp_recorder.distribution + " -s " + to_string(exp_recorder.dataset_cardinality) + " -n " +
-        //                     to_string(exp_recorder.skewness) + " -m 2 -k " + to_string(k) + " -f" + result_points_path;
-        // char command[1024];
-        // strcpy(command, commandStr.c_str());
-        // int res = system(command);
+        string commandStr = "python " + python_path + " -i " + exp_recorder.get_dataset_name() + " -k " + to_string(k) + " -o " + result_points_path;
+        // print(commandStr);
+        char command[1024];
+        strcpy(command, commandStr.c_str());
+        int res = system(command);
         FileReader reader;
         reference_points = reader.get_points(result_points_path, ",");
     }
@@ -299,10 +298,8 @@ namespace ml
 
         front /= page_size;
         back /= page_size;
-        front--;
-        back++;
-        front = max((long)0, front);
-        back = min(back, (long)storage_leafnodes.size() - 1);
+        front = max((long)0, front--);
+        back = min(back++, (long)storage_leafnodes.size() - 1);
         while (front <= back)
         {
             int mid = (front + back) / 2;
@@ -379,6 +376,7 @@ namespace ml
             }
         }
         // cout << "point_not_found: " << point_not_found << endl;
+        printf("point_not_found %d\n", point_not_found);
     }
 
     vector<Point> find_closet_points(Mbr query_window)
@@ -445,7 +443,6 @@ namespace ml
     {
         vector<Point> closest_points = find_closet_points(query_window);
         vector<Point> furthest_points = find_furthest_points(query_window);
-
         // vector<Point> res;
         for (size_t j = 0; j < k; j++)
         {
@@ -467,12 +464,11 @@ namespace ml
             {
                 if (storage_leafnodes[l].mbr.interact(query_window))
                 {
-                    for (Point point : storage_leafnodes[l].children)
+                    for (size_t i = 0; i < storage_leafnodes[l].children.size(); i++)
                     {
-                        if (query_window.contains(point))
+                        if (query_window.contains(storage_leafnodes[l].children[i]))
                         {
-                            results.push_back(point);
-                            // res.push_back(point);
+                            results.push_back(storage_leafnodes[l].children[i]);
                         }
                     }
                 }
@@ -488,8 +484,13 @@ namespace ml
         vector<Point> window_query_results;
         for (size_t i = 0; i < query_num; i++)
         {
+            // std::cout << "window query: " << i << std::endl;
+
             window_query(query.results, query.query_windows[i]);
-            framework.window_query(query.results, query.query_windows[i]);
+            // framework.window_query(query.results, query.query_windows[i]);
+            // the number of results is not necessary
+            query.results.clear();
+            query.results.shrink_to_fit();
         }
     }
 
@@ -836,6 +837,14 @@ namespace ml
                 {
                     method = framework.build_predict_method(exp_recorder.upper_level_lambda, query_frequency, original_data_set);
                 }
+                if (exp_recorder.is_single_build)
+                {
+                    method = exp_recorder.build_method;
+                }
+                if (exp_recorder.is_original)
+                {
+                    method = Constants::OG;
+                }
                 exp_recorder.record_method_nums(method);
                 std::shared_ptr<MLP> mlp = framework.get_build_method(original_data_set, method);
 
@@ -871,7 +880,6 @@ namespace ml
             index.push_back(temp_index);
         }
         exp_recorder.timer_end();
-        print("build time:" + to_string(exp_recorder.time / 1e9) + " s");
     }
 
     long acc_window_query_num(Query<Point> &query)
@@ -901,65 +909,65 @@ namespace ml
         exp_recorder.timer_begin();
         framework.query(query);
         exp_recorder.timer_end();
-        if (query.is_window())
-        {
-            long query_size = query.results.size();
-            query.results.clear();
-            query.results.shrink_to_fit();
-            long size = acc_window_query_num(query);
-            exp_recorder.accuracy = (float)query_size / size;
-            // cout << "accuracy: " << exp_recorder.accuracy << endl;
-        }
-        if (query.is_knn())
-        {
-            vector<Point> res;
-            // cout << "knn query size: " << query.results.size() << endl;
-            int found_num = 0;
-            for (size_t i = 0; i < query.knn_query_points.size(); i++)
-            {
-                priority_queue<Point, vector<Point>, sortForKNN2> pq;
-                int k = query.get_k();
-                for (size_t j = 0; j < storage_leafnodes.size(); j++)
-                {
-                    for (Point point : storage_leafnodes[j].children)
-                    {
-                        point.cal_dist(query.knn_query_points[i]);
-                        if (pq.size() < k)
-                        {
-                            pq.push(point);
-                        }
-                        else
-                        {
-                            if (pq.top().temp_dist > point.temp_dist)
-                            {
-                                pq.pop();
-                                pq.push(point);
-                            }
-                        }
-                    }
-                }
+        // if (query.is_window())
+        // {
+        //     long query_size = query.results.size();
+        //     query.results.clear();
+        //     query.results.shrink_to_fit();
+        //     long size = acc_window_query_num(query);
+        //     exp_recorder.accuracy = (float)query_size / size;
+        //     // cout << "accuracy: " << exp_recorder.accuracy << endl;
+        // }
+        // if (query.is_knn())
+        // {
+        //     vector<Point> res;
+        //     // cout << "knn query size: " << query.results.size() << endl;
+        //     int found_num = 0;
+        //     for (size_t i = 0; i < query.knn_query_points.size(); i++)
+        //     {
+        //         priority_queue<Point, vector<Point>, sortForKNN2> pq;
+        //         int k = query.get_k();
+        //         for (size_t j = 0; j < storage_leafnodes.size(); j++)
+        //         {
+        //             for (Point point : storage_leafnodes[j].children)
+        //             {
+        //                 point.cal_dist(query.knn_query_points[i]);
+        //                 if (pq.size() < k)
+        //                 {
+        //                     pq.push(point);
+        //                 }
+        //                 else
+        //                 {
+        //                     if (pq.top().temp_dist > point.temp_dist)
+        //                     {
+        //                         pq.pop();
+        //                         pq.push(point);
+        //                     }
+        //                 }
+        //             }
+        //         }
 
-                vector<Point> query_res(query.results.begin() + i * k, query.results.begin() + i * k + k);
-                // for (size_t j = 0; j < query_res.size(); j++)
-                // {
-                //     cout << query_res[j].x << ", " << query_res[j].y << " " << query_res[j].temp_dist << endl;
-                // }
-                // cout << "---------------------------" << endl;
-                while (!pq.empty())
-                {
-                    // cout << pq.top().x << ", " << pq.top().y << " " << pq.top().temp_dist << endl;
+        //         vector<Point> query_res(query.results.begin() + i * k, query.results.begin() + i * k + k);
+        //         // for (size_t j = 0; j < query_res.size(); j++)
+        //         // {
+        //         //     cout << query_res[j].x << ", " << query_res[j].y << " " << query_res[j].temp_dist << endl;
+        //         // }
+        //         // cout << "---------------------------" << endl;
+        //         while (!pq.empty())
+        //         {
+        //             // cout << pq.top().x << ", " << pq.top().y << " " << pq.top().temp_dist << endl;
 
-                    vector<Point>::iterator iter = find(query_res.begin(), query_res.end(), pq.top());
-                    if (iter != query_res.end())
-                    {
-                        found_num++;
-                    }
-                    pq.pop();
-                }
-            }
-            exp_recorder.accuracy = (float)found_num / query.results.size();
-            // cout << "accuracy: " << exp_recorder.accuracy << endl;
-        }
+        //             vector<Point>::iterator iter = find(query_res.begin(), query_res.end(), pq.top());
+        //             if (iter != query_res.end())
+        //             {
+        //                 found_num++;
+        //             }
+        //             pq.pop();
+        //         }
+        //     }
+        //     exp_recorder.accuracy = (float)found_num / query.results.size();
+        //     // cout << "accuracy: " << exp_recorder.accuracy << endl;
+        // }
     }
 
     DataSet<Point, double> generate_points(long cardinality, float dist)
@@ -1041,6 +1049,9 @@ namespace ml
         exp_recorder.timer_begin();
         vector<int> methods{Constants::CL, Constants::MR, Constants::OG, Constants::RL, Constants::RS, Constants::SP};
         config::init_method_pool(methods);
+        framework.config_method_pool();
+
+        framework.dimension = 1;
         framework.point_query_p = point_query;
         framework.window_query_p = window_query;
         framework.knn_query_p = kNN_query;
@@ -1060,7 +1071,7 @@ namespace ml
         DataSet<Point, double>::save_data_pointer = save_data;
         stages.push_back(1);
         // framework.index_name = "ML";
-        framework.config_method_pool();
+        // framework.config_method_pool();
         if (exp_recorder.is_framework)
         {
             framework.init();

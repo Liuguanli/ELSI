@@ -57,7 +57,7 @@ public:
         N = points.size();
         side = pow(2, ceil(log(N) / log(2)));
         sort(points.begin(), points.end(), sortX());
-        x_gap = 1.0 / (points[N - 1].x - points[0].x);
+        x_gap = points[N - 1].x - points[0].x;
         x_scale = 1.0 / x_gap;
         x_0 = points[0].x;
         x_1 = points[N - 1].x;
@@ -148,12 +148,16 @@ public:
 
         long long side = pow(max_partition_num, 2);
         width = side - 1;
-        // cout << "width: " << width << endl;
+        // cout << "width: " << width << endl;leaf_node_num
         int each_item_size = partition_size * max_partition_num;
         long long point_index = 0;
 
-        long long z_min = compute_Z_value(0, 0, 4);
-        long long z_max = compute_Z_value(max_partition_num - 1, max_partition_num - 1, 4);
+        long long z_min = compute_Z_value(0, 0, max_partition_num / 2);
+        // cout << "z_min: " << z_min << endl;
+
+        long long z_max = compute_Z_value(max_partition_num - 1, max_partition_num - 1, max_partition_num / 2);
+        // cout << "z_max: " << z_max << endl;
+
         long long z_gap = z_max - z_min;
         for (size_t i = 0; i < max_partition_num; i++)
         {
@@ -192,7 +196,7 @@ public:
                 auto sub_bn = vec.begin() + sub_bn_index;
                 auto sub_en = vec.begin() + sub_end_index;
                 vector<Point> sub_vec(sub_bn, sub_en);
-                long long Z_value = compute_Z_value(i, j, 4);
+                long long Z_value = compute_Z_value(i, j, max_partition_num / 2);
                 int sub_point_index = 1;
                 long sub_size = sub_vec.size();
                 int counter = 0;
@@ -222,13 +226,14 @@ public:
         }
     }
 
-    void build(ExpRecorder &exp_recorder, vector<Point> points, ELSI<Point, long long> &framework)
+    void build(ExpRecorder &exp_recorder, vector<Point> &points, ELSI<Point, long long> &framework)
     {
+
         DataSet<Point, long long> original_data_set;
         vector<float> locations;
         vector<float> labels;
         vector<long long> keys;
-        if (points.size() <= Constants::THRESHOLD)
+        if (is_last || points.size() <= Constants::THRESHOLD)
         {
             is_last = true;
             init_last(points, locations, labels, keys);
@@ -243,11 +248,17 @@ public:
                 method = framework.build_predict_method(exp_recorder.upper_level_lambda, query_frequency, original_data_set);
             }
 
+            if (exp_recorder.is_single_build)
+            {
+                method = exp_recorder.build_method;
+            }
+            if (exp_recorder.is_original)
+            {
+                method = Constants::OG;
+            }
             exp_recorder.record_method_nums(method);
 
             std::shared_ptr<MLP> mlp_ = framework.get_build_method(original_data_set, method);
-            int max_error = 0;
-            int min_error = 0;
             for (size_t i = 0; i < points.size(); i++)
             {
                 float x1 = (points[i].x - x_0) * x_scale + x_0;
@@ -261,10 +272,10 @@ public:
                 max_error = max(max_error, error);
                 min_error = min(min_error, error);
             }
+            // print("min_error: " + str(min_error) + " max_error: " + str(max_error));
+
             mlp_->max_error = max_error;
             mlp_->min_error = min_error;
-            max_error = max_error;
-            min_error = min_error;
             mlp = mlp_;
         }
         else
@@ -276,6 +287,7 @@ public:
             original_data_set.keys = keys;
             original_data_set.labels = labels;
             int method = exp_recorder.build_method;
+
             if (exp_recorder.is_framework)
             {
                 method = framework.build_predict_method(exp_recorder.upper_level_lambda, query_frequency, original_data_set);
@@ -302,6 +314,10 @@ public:
                 if (iter->second.size() > 0)
                 {
                     Partition partition;
+                    if (iter->second.size() == points.size()) 
+                    {
+                        partition.is_last = true;
+                    }
                     partition.build(exp_recorder, iter->second, framework);
                     children.insert(pair<int, Partition>(iter->first, partition));
                 }
@@ -369,12 +385,13 @@ public:
             int predicted_index = 0;
             float x1 = (query_point.x - x_0) * x_scale + x_0;
             float x2 = (query_point.y - y_0) * y_scale + y_0;
-            // predicted_index = (int)(net->predict(query_point, x_scale, y_scale, x_0, y_0) * width);
-            // predicted_index = net->predict(query_point, x_scale, y_scale, x_0, y_0) * width;
+
             predicted_index = mlp->predict(x1, x2) * leaf_node_num;
-            predicted_index = predicted_index < 0 ? 0 : predicted_index;
-            predicted_index = predicted_index >= leaf_node_num ? leaf_node_num - 1 : predicted_index;
-            // LeafNode leafnode = leafnodes[predicted_index];
+
+            predicted_index = max(predicted_index, 0);
+            predicted_index = min(predicted_index, leaf_node_num - 1);
+
+            // print("leaf_node_num: " + str(leaf_node_num) + " predicted_index: " + str(predicted_index));
 
             if (leafnodes[predicted_index].mbr.contains(query_point))
             {
@@ -388,9 +405,13 @@ public:
 
             // predicted result is not correct
             int front = predicted_index + min_error;
-            front = front < 0 ? 0 : front;
+            front = max(front, 0);
             int back = predicted_index + max_error;
-            back = back >= leafnodes.size() ? leafnodes.size() - 1 : back;
+            back = min(back, leaf_node_num - 1);
+            // print("leaf_node_num: " + str(leaf_node_num) + " predicted_index: " + str(predicted_index));
+            // print("front: " + str(front) + " back: " + str(back));
+            // print("max_error: " + str(mlp->max_error) + " min_error: " + str(mlp->min_error));
+            // print("min_error: " + str(min_error) + " max_error: " + str(max_error));
 
             int gap = 1;
             int predicted_index_left = predicted_index - gap;
@@ -467,6 +488,7 @@ public:
             float x2 = (query_point.y - y_0) * y_scale + y_0;
 
             predicted_index = mlp->predict(x1, x2) * width;
+            // print("width: " + str(width) + " predicted_index: " + str(predicted_index));
 
             predicted_index = max(predicted_index, 0);
             predicted_index = min(predicted_index, width);

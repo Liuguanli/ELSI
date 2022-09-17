@@ -48,6 +48,7 @@ public:
     DataSet *mapping()
     {
         // assert(mapping_pointer != NULL);
+
         if (mapping_pointer != NULL)
         {
             mapping_pointer(points, keys);
@@ -115,6 +116,7 @@ public:
         {
             gen_input_keys_pointer(points, normalized_keys);
         }
+        
         return this;
     }
 

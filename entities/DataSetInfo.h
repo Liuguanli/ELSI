@@ -105,8 +105,9 @@ public:
     float cal_dist(vector<float> source_cdf)
     {
         float dist = 0;
-        for (size_t i = 0; i < source_cdf.size(); i++)
+        for (size_t i = 0; i < source_cdf.size() && i < cdf.size(); i++)
         {
+
             float temp = abs(source_cdf[i] - cdf[i]);
 
             if (dist < temp)

@@ -173,3 +173,16 @@ void FileWriter::write_kNN_query(ExpRecorder exp_recorder)
     write << exp_recorder.get_knn_query_result();
     write.close();
 }
+
+void FileWriter::write_mbrs(vector<Mbr> mbrs, ExpRecorder exp_recorder)
+{
+    ofstream write;
+    string folder = Constants::WINDOW;
+    file_utils::check_dir(filename + folder);
+    write.open((filename + folder + exp_recorder.distribution + "_" + to_string(exp_recorder.dataset_cardinality) + "_" + to_string(exp_recorder.skewness) + "_" + to_string(exp_recorder.window_size) + "_" + to_string(exp_recorder.window_ratio) + ".csv"), ios::out);
+    for (Mbr mbr : mbrs)
+    {
+        write << mbr.get_self();
+    }
+    write.close();
+}
