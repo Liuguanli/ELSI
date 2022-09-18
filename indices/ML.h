@@ -171,7 +171,7 @@ namespace ml
         write.close();
     }
 
-    void init_underlying_data_storage(DataSet<Point, double> dataset)
+    void init_underlying_data_storage(DataSet<Point, double> &dataset)
     {
         storage_leafnodes.clear();
         // storage_leafnodes.shrink_to_fit();
@@ -506,6 +506,10 @@ namespace ml
                 lnode_index = -1;
                 return;
             }
+            if (lnode_index >= storage_leafnodes.size())
+            {
+                return;
+            }
             for (Point point : storage_leafnodes[lnode_index].children)
             {
                 if (S.size() == kk)
@@ -644,9 +648,12 @@ namespace ml
                     break;
                 }
             }
+
             for (size_t i = 0; i < k; i++)
             {
+
                 double dis = reference_points[i].cal_dist(query_point);
+
                 if (oflag[i] == false)
                 {
                     if (offsets[i + 1] - offsets[i] >= dis) // shpere contains q
@@ -666,7 +673,9 @@ namespace ml
 
                         search_inward(lp[i], lower_bound, key, S, kk, query_point);
                         key = dis + offsets[i] + r;
+
                         search_outward(rp[i], upper_bound, key, S, kk, query_point);
+
                     }
                     else if (offsets[i + 1] - offsets[i] + r >= dis)
                     {
@@ -681,6 +690,7 @@ namespace ml
                         lp[i] = lnode_index;
                         double key = dis + offsets[i] - r;
                         search_inward(lp[i], lower_bound, key, S, kk, query_point);
+
                     }
                 }
                 else
@@ -690,7 +700,9 @@ namespace ml
                         double key = dis + offsets[i] - r;
                         int lower_bound = partition_size[i] / page_size;
                         lower_bound = lower_bound > 0 ? lower_bound - 1 : lower_bound;
+
                         search_inward(lp[i], lower_bound, key, S, kk, query_point);
+
                     }
                     if (rp[i] != -1)
                     {
@@ -698,14 +710,18 @@ namespace ml
                         int upper_bound = partition_size[i + 1] / page_size;
                         upper_bound = upper_bound < storage_leafnodes.size() - 1 ? upper_bound + 1 : upper_bound;
                         upper_bound = upper_bound > storage_leafnodes.size() - 1 ? storage_leafnodes.size() - 1 : upper_bound;
+
                         search_outward(rp[i], upper_bound, key, S, kk, query_point);
+
                     }
                 }
             }
             r *= 2;
         }
+
         vector<Point> extra_storage_S;
         framework.kNN_query(extra_storage_S, query_point, kk);
+
         if (extra_storage_S.size() != 0)
         {
             S.insert(S.end(), extra_storage_S.begin(), extra_storage_S.end());
@@ -828,6 +844,7 @@ namespace ml
                     temp_index.push_back(mlp);
                     continue;
                 }
+
                 // TODO change records[i][j] to Dataset
                 // std::shared_ptr<MLP> mlp = framework.build(config::lambda, records[i][j]);
                 DataSet<Point, double> original_data_set(records[i][j]);

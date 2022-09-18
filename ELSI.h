@@ -54,7 +54,7 @@ public:
 
     void (*point_query_p)(Query<D> &);
     void (*build_index_p)(DataSet<D, T>, int);
-    void (*init_storage_p)(DataSet<D, T>);
+    void (*init_storage_p)(DataSet<D, T> &);
     void (*window_query_p)(Query<D> &);
     void (*knn_query_p)(Query<D> &);
     void (*insert_p)(D);

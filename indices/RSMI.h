@@ -163,7 +163,7 @@ namespace rsmi
         }
     }
 
-    void init_underlying_data_storage(DataSet<Point, long long> dataset)
+    void init_underlying_data_storage(DataSet<Point, long long> &dataset)
     {
     }
 

@@ -106,7 +106,7 @@ namespace zm
         write.close();
     }
 
-    void init_underlying_data_storage(DataSet<Point, long long> dataset)
+    void init_underlying_data_storage(DataSet<Point, long long> &dataset)
     {
         storage_leafnodes.clear();
         // storage_leafnodes.shrink_to_fit();
