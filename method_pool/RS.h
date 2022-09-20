@@ -56,7 +56,7 @@ public:
             sampled_data_set.normalized_keys.push_back(points[i].y);
             sampled_data_set.labels.push_back(points[i].label);
         }
-        cout << "sampled_data_set.size(): " << sampled_data_set.points.size() << endl;
+        // cout << "sampled_data_set.size(): " << sampled_data_set.points.size() << endl;
         return sampled_data_set;
     }
 
