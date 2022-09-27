@@ -34,6 +34,7 @@ public:
 
     inline static vector<D> (*read_data_pointer)(string, string, double &, double &, double &, double &);
     inline static void (*mapping_pointer)(vector<D> &, vector<T> &);
+    inline static void (*cl_mapping_pointer)(vector<D> &, vector<T> &);
     inline static void (*save_data_pointer)(vector<D>, string);
 
     inline static void (*gen_input_keys_pointer)(vector<D> &, vector<float> &);
@@ -52,6 +53,15 @@ public:
         if (mapping_pointer != NULL)
         {
             mapping_pointer(points, keys);
+        }
+        return this;
+    }
+
+    DataSet *cl_mapping()
+    {
+        if (cl_mapping_pointer != NULL)
+        {
+            cl_mapping_pointer(points, keys);
         }
         return this;
     }
@@ -116,7 +126,6 @@ public:
         {
             gen_input_keys_pointer(points, normalized_keys);
         }
-        
         return this;
     }
 

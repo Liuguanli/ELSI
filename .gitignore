@@ -21,5 +21,7 @@ Example
 # !indices/ML.h
 # files/*
 
+method_pool/MR/pre_train
+
 *.txt
 exp.sh

@@ -247,10 +247,17 @@ public:
             {
                 method = framework.build_predict_method(exp_recorder.upper_level_lambda, query_frequency, original_data_set);
             }
-
             if (exp_recorder.is_single_build)
             {
                 method = exp_recorder.build_method;
+            }
+            // if (method == Constants::CL && original_data_set.keys.size() <= config::cluster_k)
+            // {
+            //     method = Constants::OG;
+            // }
+            if (original_data_set.keys.size() < Constants::THRESHOLD)
+            {
+                method = Constants::MR;
             }
             if (exp_recorder.is_original)
             {
@@ -292,6 +299,18 @@ public:
             {
                 method = framework.build_predict_method(exp_recorder.upper_level_lambda, query_frequency, original_data_set);
             }
+            if (exp_recorder.is_single_build)
+            {
+                method = exp_recorder.build_method;
+            }
+            if (original_data_set.keys.size() < Constants::THRESHOLD)
+            {
+                method = Constants::MR;
+            }
+            if (exp_recorder.is_original)
+            {
+                method = Constants::OG;
+            }
             exp_recorder.record_method_nums(method);
             std::shared_ptr<MLP> mlp_ = framework.get_build_method(original_data_set, method);
 
@@ -314,7 +333,7 @@ public:
                 if (iter->second.size() > 0)
                 {
                     Partition partition;
-                    if (iter->second.size() == points.size()) 
+                    if (iter->second.size() == points.size())
                     {
                         partition.is_last = true;
                     }

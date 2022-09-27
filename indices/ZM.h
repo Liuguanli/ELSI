@@ -70,11 +70,34 @@ namespace zm
         return points;
     }
 
+    void cl_mapping(vector<Point> &points, vector<long long> &keys)
+    {
+        int cl_N = points.size();
+        int cl_index_bit_num = ceil((log(cl_N)) / log(2)) * 2;
+        for (long i = 0; i < cl_N; i++)
+        {
+            long long xs[2] = {(long long)(points[i].x * cl_N), (long long)(points[i].y * cl_N)};
+            points[i].key = compute_Z_value(xs, 2, cl_index_bit_num);
+        }
+        sort(points.begin(), points.end(), sort_key());
+
+        int cl_first_key = points[0].key;
+        int cl_last_key = points[cl_N - 1].key;
+        int cl_gap = cl_last_key - cl_first_key;
+
+        for (long i = 0; i < cl_N; i++)
+        {
+            points[i].index = i;
+            points[i].label = (float)i / cl_N;
+            points[i].normalized_key = (float)(points[i].key - cl_first_key) / cl_gap;
+            keys.push_back(points[i].key);
+        }
+    }
+
     void mapping(vector<Point> &points, vector<long long> &keys)
     {
         N = points.size();
         index_bit_num = ceil((log(N)) / log(2)) * 2;
-        // cout << "index_bit_num:" << index_bit_num << endl;
         for (long i = 0; i < N; i++)
         {
             long long xs[2] = {(long long)(points[i].x * N), (long long)(points[i].y * N)};
@@ -154,7 +177,6 @@ namespace zm
         front = min(N - 1, max((long)0, front));
         back = predicted_index + max_error + error_shift;
         back = min(N - 1, back);
-
         return predicted_index;
     }
 
@@ -162,6 +184,7 @@ namespace zm
     {
         long front = 0, back = 0;
         int predicted_index = get_point_index(query_point, front, back);
+
         front = front / page_size;
         back = back / page_size;
         front = max((long)0, --front);
@@ -452,7 +475,7 @@ namespace zm
                 vector<vector<Point>> temp_points(next_stage_length);
                 records[i + 1] = temp_points;
             }
-
+            // bool debug = true;
             for (size_t j = 0; j < stages[i]; j++)
             {
                 if (records[i][j].size() == 0)
@@ -464,6 +487,7 @@ namespace zm
                     temp_index.push_back(mlp);
                     continue;
                 }
+                // cout << "records[" << i << "][" << j << "].size():" << records[i][j].size() << endl;
                 DataSet<Point, long long> original_data_set(records[i][j]);
                 original_data_set.read_keys_and_labels();
                 int method = exp_recorder.build_method;
@@ -474,6 +498,10 @@ namespace zm
                 if (exp_recorder.is_single_build)
                 {
                     method = exp_recorder.build_method;
+                }
+                if (original_data_set.keys.size() < Constants::THRESHOLD)
+                {
+                    method = Constants::MR;
                 }
                 if (exp_recorder.is_original)
                 {
@@ -486,6 +514,7 @@ namespace zm
                 temp_index.push_back(mlp);
                 int max_error = 0;
                 int min_error = 0;
+
                 for (Point point : records[i][j])
                 {
                     float pred = mlp->predict_ZM(point.normalized_key);
@@ -691,7 +720,9 @@ namespace zm
 
         DataSet<Point, long long>::read_data_pointer = read_data;
         DataSet<Point, long long>::mapping_pointer = mapping;
+        DataSet<Point, long long>::cl_mapping_pointer = cl_mapping;
         DataSet<Point, long long>::save_data_pointer = save_data;
+
 
         // stages.push_back(1);
 

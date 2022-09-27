@@ -38,7 +38,7 @@ public:
         }
         DataSet<D, T> sampled_data_set(points);
         sampled_data_set.read_keys_and_labels();
-        cout << "size sp:" << sampled_data_set.points.size() << endl;
+        // cout << "size sp:" << sampled_data_set.points.size() << endl;
         return sampled_data_set;
     }
 
@@ -63,7 +63,7 @@ public:
         sampled_data_set.points = points;
         sampled_data_set.normalized_keys = normalized_keys;
         sampled_data_set.labels = labels;
-        cout << "size sp:" << sampled_data_set.points.size() << endl;
+        // cout << "size sp:" << sampled_data_set.points.size() << endl;
         return sampled_data_set;
     }
 };

@@ -1,10 +1,12 @@
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 import sys
 import os
 
 np.random.seed(1)
-tf.compat.v1.set_random_seed(1)
+tf.set_random_seed(1)
+# tf.compat.v1.set_random_seed(1)
 
 class DeepQNetwork():
     def __init__(self,
@@ -59,7 +61,7 @@ class DeepQNetwork():
         tf.reset_default_graph()
         # ------------------ all inputs ------------------------
         self.s = tf.placeholder(tf.float32, [None, self.n_features], name='s')  # input State
-        print('_build_net self.n_features :', self.n_features)
+        # print('_build_net self.n_features :', self.n_features)
         self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name='s_')  # input Next State
         self.r = tf.placeholder(tf.float32, [None, ], name='r')  # input Reward
         self.a = tf.placeholder(tf.int32, [None, ], name='a')  # input Action

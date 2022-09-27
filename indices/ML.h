@@ -103,6 +103,36 @@ namespace ml
         return partition_index;
     }
 
+    void cl_mapping(vector<Point> &points, vector<long long> &keys)
+    {
+        int cl_N = points.size();
+
+        for (size_t i = 0; i < cl_N; i++)
+        {
+            int partition_index = get_partition_id(points[i]);
+            points[i].partition_id = partition_index;
+        }
+
+        for (size_t i = 0; i < cl_N; i++)
+        {
+            points[i].key = offsets[points[i].partition_id] + points[i].cal_dist(reference_points[points[i].partition_id]);
+        }
+
+        sort(points.begin(), points.end(), sort_key());
+
+        double cl_first_key = points[0].key;
+        double cl_last_key = points[cl_N - 1].key;
+        double cl_gap = cl_last_key - cl_first_key;
+
+        for (long i = 0; i < cl_N; i++)
+        {
+            points[i].index = i;
+            points[i].label = (float)i / cl_N;
+            points[i].normalized_key = (points[i].key - cl_first_key) / cl_gap;
+            keys.push_back(points[i].key);
+        }
+    }
+
     void mapping(vector<Point> &points, vector<double> &keys)
     {
         N = points.size();
@@ -841,6 +871,10 @@ namespace ml
                 {
                     method = exp_recorder.build_method;
                 }
+                if (original_data_set.keys.size() < Constants::THRESHOLD)
+                {
+                    method = Constants::MR;
+                }
                 if (exp_recorder.is_original)
                 {
                     method = Constants::OG;
@@ -1068,6 +1102,7 @@ namespace ml
 
         DataSet<Point, double>::read_data_pointer = read_data;
         DataSet<Point, double>::mapping_pointer = mapping;
+        DataSet<Point, long long>::cl_mapping_pointer = cl_mapping;
         DataSet<Point, double>::save_data_pointer = save_data;
         stages.push_back(1);
         // framework.index_name = "ML";

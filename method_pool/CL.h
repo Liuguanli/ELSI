@@ -27,7 +27,6 @@ public:
 
     DataSet<D, T> do_cl(DataSet<D, T> &dataset, int k)
     {
-        // TODO 1 store as a temp dataset file, use python to get centroids
         dataset.save_temp_data();
         string out_file_name = "./data/generated.csv";
         string commandStr = "python " + Constants::CLUSTER_FILE + " -k " + to_string(k) + " -i " + dataset.path + " -o " + out_file_name;
@@ -37,7 +36,11 @@ public:
         int res = system(command);
         dataset.remove_temp_data();
         DataSet<D, T> generated_dataset(out_file_name);
-        generated_dataset.read_data()->mapping()->generate_normalized_keys()->generate_labels();
+        generated_dataset.read_data()->cl_mapping()->generate_normalized_keys()->generate_labels();
+        // for (int i = 0; i < generated_dataset.keys.size(); i++)
+        // {
+        //     cout << "i: " << i << "n_key: " << generated_dataset.normalized_keys[i] << " n_label:" << generated_dataset.labels[i] << endl;
+        // }
         return generated_dataset;
     }
 
@@ -55,7 +58,7 @@ public:
         DataSet<D, T> generated_dataset(out_file_name);
         // generated_dataset.read_data()->mapping()->generate_normalized_keys()->generate_labels();
         generated_dataset.read_data();
-        generated_dataset.mapping();
+        generated_dataset.cl_mapping();
         generated_dataset.generate_normalized_keys();
         generated_dataset.generate_labels();
         return generated_dataset;

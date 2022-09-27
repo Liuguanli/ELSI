@@ -47,7 +47,7 @@ namespace lisa
     // int n_parts = 1;
     float eta = 0.01;
     // int n_models = 200;
-    int n_models = 1000;
+    int n_models = 100;
     float max_value_x = 1.0;
     int shard_id = 0;
     int page_id = 0;
@@ -178,7 +178,6 @@ namespace lisa
 
         sort(points.begin(), points.end(), sortX());
         // this->max_value_x = points[N - 1].x;
-        // cout << "max_value_x: " << max_value_x << endl;
 
         borders.push_back(0.0);
         for (size_t i = 0; i < remainder; i++)
@@ -248,13 +247,11 @@ namespace lisa
         int offset = N / n_models;
         for (size_t i = 1; i < n_models; i++)
         {
-            // cout << "-----------" << i << "-----------" << endl;
             int idx = i * offset;
             while (mappings[idx] == mappings[idx + 1])
             {
                 idx++;
             }
-            // cout << "idx:" << idx << endl;
             model_split_mapping.push_back(mappings[idx]);
             model_split_idxes.push_back(idx);
         }
@@ -274,6 +271,47 @@ namespace lisa
         write.close();
     }
 
+    bool point_query(Point &query_point)
+    {
+        // cout << "point_query" << endl;
+        double key = get_mapped_key(query_point, get_partition_index(query_point));
+        // cout << "key:" << key << endl;
+        int model_index = get_model_index(key);
+        // cout << "model_index:" << model_index << endl;
+        int partition_size = partition_sizes[model_index];
+        // cout << "partition_size:" << partition_size << endl;
+
+        int shard_index = SP[model_index]->predict_ZM(key - min_key_list[model_index]) * partition_size / page_size;
+        // cout << "shard_index:" << shard_index << endl;
+
+        auto it = shards[model_index].find(shard_index);
+        if (!it->second.search_point(query_point))
+        {
+            while (model_index > 0)
+            {
+                model_index--;
+                partition_size = partition_sizes[model_index];
+                if (partition_size == 0)
+                {
+                    continue;
+                }
+                // cout << "model_index: " << model_index << " partition_size:" << partition_size << endl;
+                shard_index = SP[model_index]->predict_ZM(key - min_key_list[model_index]) * partition_size / page_size;
+                // cout << "shard_index:" << shard_index << endl;
+                // cout << "shards.size():" << shards.size() << endl;
+                auto it_left = shards[model_index].find(shard_index);
+                // cout << "find?" << endl;
+                if (it_left == shards[model_index].end() || !it_left->second.search_point(query_point))
+                {
+                    // cout << "not find" << endl;
+                    return false;
+                }
+                // cout << "here?" << endl;
+            }
+        }
+        return true;
+    }
+
     void point_query(Query<Point> &query)
     {
         int point_not_found = 0;
@@ -281,30 +319,18 @@ namespace lisa
         int query_num = query_points.size();
         for (size_t i = 0; i < query_num; i++)
         {
-            double key = get_mapped_key(query_points[i], get_partition_index(query_points[i]));
-            query_points[i].key = key;
-            int model_index = get_model_index(key);
-
-            int partition_size = partition_sizes[model_index];
-            int shard_index = SP[model_index]->predict_ZM(key - min_key_list[model_index]) * partition_size / page_size;
-
-            auto it = shards[model_index].find(shard_index);
-            if (!it->second.search_point(query_points[i]))
+            if (!point_query(query.query_points[i]))
             {
-                if (model_index > 0)
-                {
-                    model_index--;
-                    partition_size = partition_sizes[model_index];
-                    shard_index = SP[model_index]->predict_ZM(key - min_key_list[model_index]) * partition_size / page_size;
-                    auto it_left = shards[model_index].find(shard_index);
-                    if (!it_left->second.search_point(query_points[i]))
-                    {
-                        point_not_found++;
-                    }
-                }
+                // if (!framework.point_query(query.query_points[i]))
+                // {
+                point_not_found++;
+                // cout << "i :" << i << endl;
+                // break;
+                // }
             }
         }
-        cout << "point_not_found: " << point_not_found << endl;
+        // cout << "point_not_found: " << point_not_found << endl;
+        printf("point_not_found %d\n", point_not_found);
     }
 
     void window_query(Mbr query_window, int partition_index, vector<Point> &result)
@@ -518,6 +544,10 @@ namespace lisa
             {
                 method = exp_recorder.build_method;
             }
+            if (original_data_set.keys.size() < Constants::THRESHOLD)
+            {
+                method = Constants::MR;
+            }
             if (exp_recorder.is_original)
             {
                 method = Constants::OG;
@@ -718,6 +748,7 @@ namespace lisa
     {
         // dataset_name = _dataset_name;
         // generate_points();
+        // n_models = N / Constants::THRESHOLD;
         exp_recorder.name = "LISA";
         exp_recorder.timer_begin();
         // vector<int> methods{Constants::MR, Constants::OG, Constants::RS, Constants::SP};

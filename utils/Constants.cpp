@@ -1,4 +1,5 @@
 #include "Constants.h"
+// #include "Config.h"
 
 const string Constants::RECORDS = "./files/records/";
 const string Constants::QUERYPROFILES = "./files/queryprofile/";

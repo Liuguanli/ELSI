@@ -131,6 +131,10 @@ public:
     bool is_point = false;
     bool is_insert = false;
 
+    bool test_point = false;
+    bool test_window = false;
+    bool test_knn = false;
+
     void record_method_nums(int method)
     {
         switch (method)
@@ -197,8 +201,6 @@ public:
         time /= 1e3;
         return time;
     }
-
-    
 
     string get_file_name()
     {

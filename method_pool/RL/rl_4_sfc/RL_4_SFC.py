@@ -47,7 +47,7 @@ def init_sfc(length):
     return pdf, cdf, sfc
 
 def get_pdf_cdf_from_sfc(sfc, print_gap = False):
-    length = sum(sfc)
+    length = sum(sfc) + 1
     pdf = [i * 1.0 / length for i in sfc]
     cdf = []
     num = 0.0
@@ -152,7 +152,7 @@ def train_sfc(RL, sfc, cdf, target_cdf):
             min_dist = temp_dist
             min_sfc = sfc_new
         if step > iteration:
-            print(temp_dist)
+            # print(temp_dist)
             break
         sfc = sfc_new
         # if step % 100 == 0:
@@ -162,7 +162,7 @@ def train_sfc(RL, sfc, cdf, target_cdf):
             # print("new_sfc", sfc)
             # print("new_cdf", new_cdf)
         step += 1
-    print(min_dist)
+    # print(min_dist)
     return min_sfc, min_dist
     # return sfc
 

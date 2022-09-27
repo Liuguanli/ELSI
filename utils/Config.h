@@ -38,6 +38,19 @@ namespace config
         }
     }
 
+    void set_method_value(int method, float value)
+    {
+        if (method == Constants::CL)
+            cluster_k = (int)value;
+        if (method == Constants::MR)
+            sampling_rate = value;
+        if (method == Constants::RL)
+            bit_num = (int)value;
+        if (method == Constants::RS)
+            rs_m = (int)value;
+        if (method == Constants::SP)
+            sampling_rate = value;
+    }
 }
 
 #endif
