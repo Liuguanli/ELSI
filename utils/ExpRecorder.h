@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <chrono>
+#include <random>
 #include <queue>
 #include "../entities/Point.h"
 #include "../entities/Statistics.h"
@@ -39,6 +40,7 @@ public:
     bool is_original = false;
 
     bool is_single_build = false;
+    bool is_random_build = false;
 
     string name;
 
@@ -160,6 +162,16 @@ public:
         default:
             break;
         }
+    }
+    
+    int get_random_method()
+    {
+        std::random_device rd; // Only used once to initialise (seed) engine
+        std::mt19937 rng(rd());
+        std::uniform_int_distribution<int> uni(0, 5);
+        auto random_integer = uni(rng);
+        return random_integer;
+        return 0;
     }
 
     string get_current_time()

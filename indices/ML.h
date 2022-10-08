@@ -103,7 +103,7 @@ namespace ml
         return partition_index;
     }
 
-    void cl_mapping(vector<Point> &points, vector<long long> &keys)
+    void cl_mapping(vector<Point> &points, vector<double> &keys)
     {
         int cl_N = points.size();
 
@@ -141,7 +141,6 @@ namespace ml
         {
             int partition_index = get_partition_id(points[i]);
             points[i].partition_id = partition_index;
-            partitions[partition_index].push_back(points[i]);
         }
         offsets[0] = 0;
         partition_size[0] = 0;
@@ -858,6 +857,8 @@ namespace ml
                     temp_index.push_back(mlp);
                     continue;
                 }
+                // cout << "records[" << i << "][" << j << "].size():" << records[i][j].size() << endl;
+
                 // TODO change records[i][j] to Dataset
                 // std::shared_ptr<MLP> mlp = framework.build(config::lambda, records[i][j]);
                 DataSet<Point, double> original_data_set(records[i][j]);
@@ -870,6 +871,10 @@ namespace ml
                 if (exp_recorder.is_single_build)
                 {
                     method = exp_recorder.build_method;
+                }
+                if (exp_recorder.is_random_build)
+                {
+                    method = exp_recorder.get_random_method();
                 }
                 if (original_data_set.keys.size() < Constants::THRESHOLD)
                 {
@@ -1102,9 +1107,8 @@ namespace ml
 
         DataSet<Point, double>::read_data_pointer = read_data;
         DataSet<Point, double>::mapping_pointer = mapping;
-        DataSet<Point, long long>::cl_mapping_pointer = cl_mapping;
+        DataSet<Point, double>::cl_mapping_pointer = cl_mapping;
         DataSet<Point, double>::save_data_pointer = save_data;
-        stages.push_back(1);
         // framework.index_name = "ML";
         // framework.config_method_pool();
         if (exp_recorder.is_framework)
@@ -1127,7 +1131,6 @@ namespace ml
         print("mapping data time:" + to_string((int)(exp_recorder.time / 1e9)) + "s");
 
         N = dataset.points.size();
-        stages.push_back(N / Constants::THRESHOLD);
 
         init_underlying_data_storage(dataset);
         exp_recorder.timer_end();

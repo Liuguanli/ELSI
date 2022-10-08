@@ -80,8 +80,10 @@ public:
             }
             methods.insert(pair<int, vector<float>>(i, one_hot));
         }
-        query_cost_model = std::make_shared<MLP>(2 + pool_size, Constants::SCORER_WIDTH);
-        build_cost_model = std::make_shared<MLP>(2 + pool_size, Constants::SCORER_WIDTH);
+        // query_cost_model = std::make_shared<MLP>(2 + pool_size, Constants::SCORER_WIDTH);
+        // build_cost_model = std::make_shared<MLP>(2 + pool_size, Constants::SCORER_WIDTH);
+        query_cost_model = std::make_shared<MLP>(2 + pool_size, Constants::SCORER_WIDTH * 2, 4);
+        build_cost_model = std::make_shared<MLP>(2 + pool_size, Constants::SCORER_WIDTH * 2, 4);
     }
 
     void init()
@@ -99,7 +101,6 @@ public:
 
     int build_predict_method(float lambda, float query_frequency, DataSet<D, T> &original_data_set)
     {
-
         assert(original_data_set.keys.size() > 0);
         int method_pool_size = methods.size();
 
@@ -115,6 +116,9 @@ public:
         vector<float> parameters;
         parameters.push_back((float)original_data_set.keys.size() / max_cardinality);
         parameters.push_back(distribution);
+        // cout << "----------------------build_predict_method---------------------- " << endl;
+        // cout << "cardinality: " << (float)original_data_set.keys.size() / max_cardinality << endl;
+        // cout << "distribution: " << distribution << endl;
 
         for (size_t i = 0; i < method_pool_size; i++)
         {
@@ -131,11 +135,12 @@ public:
             torch::Tensor x = torch::tensor(temp).reshape({1, 8});
 #endif
 
-            build_score[i] = build_cost_model->predict(x).item().toFloat();
-            
-            query_score[i] = query_cost_model->predict(x).item().toFloat();
+            build_score[i] = build_cost_model->predict_level(x).item().toFloat();
+            query_score[i] = query_cost_model->predict_level(x).item().toFloat();
 
             float score = build_score[i] * lambda + query_score[i] * query_frequency * (1 - lambda);
+
+            // cout << "i:" << i << " build_score[i]: " << build_score[i] << " query_score[i]: " << query_score[i] << endl;
 
             if (score > max)
             {
@@ -230,7 +235,7 @@ public:
             break;
         case Constants::SP:
             SP<D, T> sp;
-            shrinked_data_set = sp.do_sp(original_data_set, config::sampling_rate, dimension);
+            shrinked_data_set = sp.do_sp(original_data_set, config::sampling_rate, config::is_systematic_sampling, dimension);
             break;
         default:
             shrinked_data_set = original_data_set;
@@ -450,19 +455,79 @@ public:
 private:
     void init_build_processor()
     {
-        // string build_time_model_path = "/home/liuguanli/Dropbox/shared/VLDB20/codes/rsmi/cost_model/build_time_model_zm.pt";
-        // string query_time_model_path = "/home/liuguanli/Dropbox/shared/VLDB20/codes/rsmi/cost_model/query_time_model_zm.pt";
-        string build_time_model_path = Constants::BUILD_TIME_MODEL_PATH;
-        string query_time_model_path = Constants::QUERY_TIME_MODEL_PATH;
+        string build_time_model_path = config::build_time_model_path;
+        string query_time_model_path = config::query_time_model_path;
+        print("init_build_processor");
+        if (config::query_time_model_path.empty())
+        {
+            build_time_model_path = Constants::BUILD_TIME_MODEL_PATH;
+            query_time_model_path = Constants::QUERY_TIME_MODEL_PATH;
+        }
+        build_time_model_path = "./data/build_time_model_zm_4l.pt";
+        query_time_model_path = "./data/query_time_model_zm_4l.pt";
+        print("build_time_model_path:" + build_time_model_path);
+        print("query_time_model_path:" + query_time_model_path);
         string raw_data_path = Constants::RAW_DATA_PATH;
+        string scorer_formatted = Constants::SCORER_FORMATTED;
 
         std::ifstream fin_build(build_time_model_path);
         std::ifstream fin_query(query_time_model_path);
+        std::ifstream fin_scorer_formatted(scorer_formatted);
         if (fin_build && fin_query)
         {
             torch::load(build_cost_model, build_time_model_path);
             torch::load(query_cost_model, query_time_model_path);
             print("LOAD BUILD MODULE---------------DONE");
+        }
+        else if (fin_scorer_formatted)
+        {
+            print("TRAIN BUILD MODULE---------------START");
+
+            vector<float> train_parameters;
+            vector<float> train_build_time_labels;
+            vector<float> train_query_time_labels;
+
+            string line = "";
+            float cardinality_boundary = 1.0 / pow(10, 8 - config::build_time_model_training_cardinality_bound);
+            while (getline(fin_scorer_formatted, line))
+            {
+                vector<string> vec;
+                boost::algorithm::split(vec, line, boost::is_any_of(","));
+                if (stof(vec[0]) > cardinality_boundary)
+                {
+                    break;
+                }
+                for (int i = 0; i < 8; i++)
+                {
+                    train_parameters.push_back(stof(vec[i]));
+                }
+                train_build_time_labels.push_back(stof(vec[8]));
+                train_query_time_labels.push_back(stof(vec[9]));
+            }
+            fin_scorer_formatted.close();
+            int n_records = train_query_time_labels.size();
+            cout << "n_records: " << n_records << endl;
+
+#ifdef use_gpu
+            build_cost_model->to(torch::kCUDA);
+            query_cost_model->to(torch::kCUDA);
+            torch::Tensor x = torch::tensor(train_parameters, at::kCUDA).reshape({n_records, 8});
+            torch::Tensor y1 = torch::tensor(train_build_time_labels, at::kCUDA).reshape({n_records, 1});
+            torch::Tensor y2 = torch::tensor(train_query_time_labels, at::kCUDA).reshape({n_records, 1});
+#else
+            torch::Tensor x = torch::tensor(train_parameters).reshape({n_records, 8});
+            torch::Tensor y2 = torch::tensor(train_build_time_labels).reshape({n_records, 1});
+            torch::Tensor y2 = torch::tensor(train_query_time_labels).reshape({n_records, 1});
+#endif
+            // build_cost_model->train_model(train_parameters, train_build_time_labels);
+            // query_cost_model->train_model(train_parameters, train_query_time_labels);
+            build_cost_model->train_model_level(train_parameters, train_build_time_labels);
+            query_cost_model->train_model_level(train_parameters, train_query_time_labels);
+
+            torch::save(build_cost_model, build_time_model_path);
+            torch::save(query_cost_model, query_time_model_path);
+
+            print("TRAIN BUILD MODULE---------------DONE");
         }
         else
         {
@@ -529,7 +594,8 @@ private:
 
             for (size_t i = 0; i < records.size(); i++)
             {
-                records[i].cardinality = (float)records[i].cardinality / max_cardinality;
+                if ((float)pow(10, config::build_time_model_training_cardinality_bound) < (float)records[i].cardinality)
+                    records[i].cardinality = (float)records[i].cardinality / max_cardinality;
                 records[i].build_time = (float)og_build_time / records[i].build_time;
                 records[i].query_time = (float)og_query_time / records[i].query_time;
                 parameters.push_back(records[i].cardinality);

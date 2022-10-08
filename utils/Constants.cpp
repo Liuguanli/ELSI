@@ -41,6 +41,7 @@ const string Constants::RL_FILE_RSMI = "./method_pool/RL/rl_4_sfc/RL_4_SFC_RSMI.
 const string Constants::BUILD_TIME_MODEL_PATH = "./data/build_time_model_zm.pt";
 const string Constants::QUERY_TIME_MODEL_PATH = "./data/query_time_model_zm.pt";
 const string Constants::RAW_DATA_PATH = "./data/scorer_raw_data.csv";
+const string Constants::SCORER_FORMATTED = "./data/scorer_formatted.csv";
 
 const string Constants::SYNTHETIC_DATA_PATH = "/home/research/datasets/BASE/synthetic/";
 

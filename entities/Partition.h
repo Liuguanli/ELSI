@@ -303,6 +303,10 @@ public:
             {
                 method = exp_recorder.build_method;
             }
+            if (exp_recorder.is_random_build)
+            {
+                method = exp_recorder.get_random_method();
+            }
             if (original_data_set.keys.size() < Constants::THRESHOLD)
             {
                 method = Constants::MR;
@@ -311,6 +315,7 @@ public:
             {
                 method = Constants::OG;
             }
+
             exp_recorder.record_method_nums(method);
             std::shared_ptr<MLP> mlp_ = framework.get_build_method(original_data_set, method);
 

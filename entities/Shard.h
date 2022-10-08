@@ -9,12 +9,13 @@ class Shard
 private:
     int id;
     int page_size;
-    vector<LeafNode> pages;
 
     vector<int> PA;
     vector<float> PM;
 
 public:
+    vector<LeafNode> pages;
+
     Shard(int);
     Shard(int, int);
     void create_pages();

@@ -46,6 +46,7 @@ struct MLP : torch::nn::Module
 
 public:
     torch::nn::Linear fc1{nullptr}, fc2{nullptr};
+    torch::nn::Linear fc3{nullptr}, fc4{nullptr};
 
     int input_width;
     int max_error = 0;
@@ -68,6 +69,24 @@ public:
 
     float b2 = 0.0;
     float total_loss = 0;
+
+    MLP(int input_width, int width, int level)
+    {
+        this->width = 64;
+        this->input_width = input_width;
+        fc1 = register_module("fc1", torch::nn::Linear(input_width, width));
+        fc2 = register_module("fc2", torch::nn::Linear(width, width));
+        fc3 = register_module("fc3", torch::nn::Linear(width, width));
+        fc4 = register_module("fc4", torch::nn::Linear(width, 1));
+        torch::nn::init::uniform_(fc1->weight, 0, 1);
+        torch::nn::init::uniform_(fc2->weight, 0, 1);
+        torch::nn::init::uniform_(fc3->weight, 0, 1);
+        torch::nn::init::uniform_(fc4->weight, 0, 1);
+        torch::nn::init::constant_(fc1->bias, 0);
+        torch::nn::init::constant_(fc2->bias, 0);
+        torch::nn::init::constant_(fc3->bias, 0);
+        torch::nn::init::constant_(fc4->bias, 0);
+    }
 
     MLP(int input_width)
     {
@@ -208,6 +227,31 @@ public:
         // x = fc2->forward(x);
         return x;
         // return fc2->forward(fc1->forward(x));
+    }
+
+    torch::Tensor forward_level(torch::Tensor x)
+    {
+        // Use one of many tensor manipulation functions.
+        // x = torch::sigmoid(fc1->forward(x));
+        x = torch::relu(fc1->forward(x));
+        x = torch::relu(fc2->forward(x));
+        x = torch::relu(fc3->forward(x));
+        // x = fc1->forward(x);
+        x = fc4->forward(x);
+        // x = torch::dropout(x, /*p=*/0.5, /*train=*/is_training());
+        // x = torch::relu(fc2->forward(x));
+        // x = fc2->forward(x);
+        return x;
+        // return fc2->forward(fc1->forward(x));
+    }
+
+    torch::Tensor predict_level(torch::Tensor x)
+    {
+        x = torch::relu(fc1->forward(x));
+        x = torch::relu(fc2->forward(x));
+        x = torch::relu(fc3->forward(x));
+        x = fc4->forward(x);
+        return x;
     }
 
     torch::Tensor predict(torch::Tensor x)
@@ -483,6 +527,37 @@ public:
                 total_loss = loss.item().toFloat();
                 optimizer.step();
             }
+        }
+    }
+
+    void train_model_level(vector<float> locations, vector<float> labels)
+    {
+
+        long long N = labels.size();
+        // cout<< "N: " << N << endl;
+#ifdef use_gpu
+        torch::Tensor x = torch::tensor(locations, at::kCUDA).reshape({N, this->input_width});
+        torch::Tensor y = torch::tensor(labels, at::kCUDA).reshape({N, 1});
+#else
+        torch::Tensor x = torch::tensor(locations).reshape({N, this->input_width});
+        torch::Tensor y = torch::tensor(labels).reshape({N, 1});
+#endif
+        // torch::Tensor x = torch::tensor(locations).reshape({N, this->input_width});
+        // torch::Tensor y = torch::tensor(labels).reshape({N, 1});
+        // auto net = isRetrain ? this->net : std::make_shared<Net>(2, width);
+        // auto net = std::make_shared<Net>(this->input_width, this->width);
+        torch::optim::Adam optimizer(this->parameters(), torch::optim::AdamOptions(0.01));
+
+        for (size_t epoch = 0; epoch < 5000; epoch++)
+        {
+            optimizer.zero_grad();
+            torch::Tensor loss = torch::mse_loss(this->forward_level(x), y);
+#ifdef use_gpu
+            loss.to(torch::kCUDA);
+#endif
+            loss.backward();
+            total_loss = loss.item().toFloat();
+            optimizer.step();
         }
     }
 

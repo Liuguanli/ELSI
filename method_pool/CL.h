@@ -27,6 +27,7 @@ public:
 
     DataSet<D, T> do_cl(DataSet<D, T> &dataset, int k)
     {
+        // cout<< "do_cl: " << k << endl;
         dataset.save_temp_data();
         string out_file_name = "./data/generated.csv";
         string commandStr = "python " + Constants::CLUSTER_FILE + " -k " + to_string(k) + " -i " + dataset.path + " -o " + out_file_name;
@@ -35,7 +36,10 @@ public:
         strcpy(command, commandStr.c_str());
         int res = system(command);
         dataset.remove_temp_data();
+        // cout<< "do_cl out_file_name: " << out_file_name << endl;
+
         DataSet<D, T> generated_dataset(out_file_name);
+
         generated_dataset.read_data()->cl_mapping()->generate_normalized_keys()->generate_labels();
         // for (int i = 0; i < generated_dataset.keys.size(); i++)
         // {
@@ -46,7 +50,7 @@ public:
 
     DataSet<D, T> do_cl_2d(DataSet<D, T> &dataset, int k)
     {
-        cout << "do_cl:" << dataset.path << endl;
+        // cout << "do_cl:" << dataset.path << endl;
         dataset.save_temp_data();
         string out_file_name = "./data/generated.csv";
         string commandStr = "python " + Constants::CLUSTER_FILE + " -k " + to_string(k) + " -i " + dataset.path + " -o " + out_file_name;

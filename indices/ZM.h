@@ -189,6 +189,7 @@ namespace zm
         back = back / page_size;
         front = max((long)0, --front);
         back = min(++back, (long)storage_leafnodes.size() - 1);
+        // cout << "front: " << front << " back:" << back << endl;
         while (front <= back)
         {
             int mid = (front + back) / 2;
@@ -234,7 +235,7 @@ namespace zm
         int point_not_found = 0;
         vector<Point> query_points = query.query_points;
         int query_num = query_points.size();
-        for (size_t i = 0; i < query_num; i++)
+        for (size_t i = 0; i < query_num; i += 10000000)
         {
             if (!point_query(query.query_points[i]))
             {
@@ -244,6 +245,7 @@ namespace zm
                 }
             }
         }
+
         printf("point_not_found %d\n", point_not_found);
     }
 
@@ -499,6 +501,10 @@ namespace zm
                 {
                     method = exp_recorder.build_method;
                 }
+                if (exp_recorder.is_random_build)
+                {
+                    method = exp_recorder.get_random_method();
+                }
                 if (original_data_set.keys.size() < Constants::THRESHOLD)
                 {
                     method = Constants::MR;
@@ -537,6 +543,7 @@ namespace zm
                 {
                     mlp->max_error = max_error;
                     mlp->min_error = min_error;
+                    cout << "min_error: " << min_error << " max_error: " << max_error << " total: " << (max_error - min_error) / 100 << endl;
                 }
                 records[i][j].clear();
                 records[i][j].shrink_to_fit();
@@ -722,7 +729,6 @@ namespace zm
         DataSet<Point, long long>::mapping_pointer = mapping;
         DataSet<Point, long long>::cl_mapping_pointer = cl_mapping;
         DataSet<Point, long long>::save_data_pointer = save_data;
-
 
         // stages.push_back(1);
 

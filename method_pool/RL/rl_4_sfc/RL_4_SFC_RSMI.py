@@ -151,11 +151,11 @@ def train_sfc(RL, sfc, cdf, target_cdf):
             min_dist = temp_dist
             min_sfc = sfc_new
         if step > iteration:
-            print(temp_dist)
+            # print(temp_dist)
             break
         sfc = sfc_new
         step += 1
-    print(min_dist)
+    # print(min_dist)
     return min_sfc, min_dist
     # return sfc
 
@@ -277,8 +277,8 @@ if __name__ == "__main__":
 
         target_pdf, target_cdf = get_pdf_cdf(input_file)
         source_cdf, new_cdf, target_cdf, min_dist, new_sfc = run(bin_num, target_cdf, method_name)
-        print(target_cdf)
-        print(new_cdf)
+        # print(target_cdf)
+        # print(new_cdf)
 
         bit_num_map={64:3, 256:4, 1024:5}
         write_SFC_2d(output_file, bit_num_map[bin_num], new_sfc, new_cdf)

@@ -20,6 +20,7 @@ namespace config
 {
     map<int, int> method_pool;
     float sampling_rate = 0.0001;
+    bool is_systematic_sampling = true;
     int bit_num = 8;
     int rs_m = 100;
     int cluster_k = 100;
@@ -29,6 +30,11 @@ namespace config
 
     float lambda = 0.8;
     float query_frequency = 1.0;
+
+    int build_time_model_training_cardinality_bound = 8;
+
+    string build_time_model_path = Constants::BUILD_TIME_MODEL_PATH;
+    string query_time_model_path = Constants::QUERY_TIME_MODEL_PATH;
 
     void init_method_pool(vector<int> methods)
     {
@@ -52,5 +58,4 @@ namespace config
             sampling_rate = value;
     }
 }
-
 #endif

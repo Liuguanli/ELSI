@@ -46,8 +46,8 @@ namespace lisa
     int n_parts = 240;
     // int n_parts = 1;
     float eta = 0.01;
-    // int n_models = 200;
     int n_models = 100;
+    // int n_models = 100;
     float max_value_x = 1.0;
     int shard_id = 0;
     int page_id = 0;
@@ -512,7 +512,7 @@ namespace lisa
         for (size_t i = 0; i < n_models; i++)
         {
             vector<Point> part_data(dataset.points.begin() + start, dataset.points.begin() + model_split_idxes[i]);
-            vector<double> keys;
+            vector<float> keys;
             vector<float> labels;
             // float min_key = part_data[0].key;
             double min_key = mappings[start];
@@ -526,31 +526,41 @@ namespace lisa
             {
                 keys.push_back(mappings[start + j] - min_key);
                 labels.push_back(j * 1.0 / part_data_size);
+                // part_data[j].key = mappings[start + j] - min_key;
+                // part_data[j].label = j * 1.0 / part_data_size;
+                // part_data[j].normalized_key = mappings[start + j] - min_key;
             }
 
             DataSet<Point, double> original_data_set(part_data);
             original_data_set.read_keys_and_labels();
-            original_data_set.keys = keys;
+            original_data_set.normalized_keys = keys;
+            original_data_set.labels = labels;
             int method = exp_recorder.build_method;
+
             if (exp_recorder.is_framework)
             {
                 method = framework.build_predict_method(exp_recorder.upper_level_lambda, query_frequency, original_data_set);
             }
-            if (method == Constants::CL || method == Constants::RL)
-            {
-                method = Constants::OG;
-            }
+
             if (exp_recorder.is_single_build)
             {
                 method = exp_recorder.build_method;
             }
-            if (original_data_set.keys.size() < Constants::THRESHOLD)
-            {
-                method = Constants::MR;
-            }
+            // if (original_data_set.keys.size() < Constants::THRESHOLD)
+            // {
+            //     method = Constants::MR;
+            // }
             if (exp_recorder.is_original)
             {
                 method = Constants::OG;
+            }
+            if (exp_recorder.is_random_build)
+            {
+                method = exp_recorder.get_random_method();
+            }
+            if (method == Constants::CL || method == Constants::RL)
+            {
+                method = Constants::MR;
             }
 
             exp_recorder.record_method_nums(method);
@@ -561,12 +571,19 @@ namespace lisa
 
             vector<int> positions;
             // vector<float> predicts;
+            // cout << "------------part_data_size-----------: " << part_data_size << endl;
             for (size_t j = 0; j < part_data_size; j++)
             {
                 // predicts.push_back(net->predict_ZM(keys[j]));
                 int idx = mlp->predict_ZM(keys[j]) * part_data_size / page_size;
                 positions.push_back(idx);
                 entries_count[idx]++;
+                // if (j == 0)
+                // {
+                //     cout << "keys[j]" << keys[j] << endl;
+                //     cout << "mlp->predict_ZM(keys[j])" << mlp->predict_ZM(keys[j]) << endl;
+                //     cout << "idx" << idx << endl;
+                // }
             }
             map<int, int>::iterator iter = entries_count.begin();
             int start_idx = 0;
@@ -587,6 +604,14 @@ namespace lisa
                 iter++;
                 // cout << "------------idx-----------: " << idx << endl;
             }
+
+            // map<int, Shard>::iterator iter1 = model_shards.begin();
+            // cout << "------------model ------------: " << i << endl;
+            // while (iter1 != model_shards.end())
+            // {
+            //     std::cout << "shard id: " << iter1->first << " shard size: " << iter1->second.pages.size() << std::endl;
+            //     iter1++;
+            // }
 
             start = model_split_idxes[i];
             SP.push_back(mlp);

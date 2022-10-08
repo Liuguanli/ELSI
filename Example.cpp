@@ -122,6 +122,35 @@ void get_mbrs(map<string, vector<Mbr>> &mbrs_map, ExpRecorder &exp_recorder, vec
 
 void test_ZM_single(ExpRecorder &exp_recorder)
 {
+    print("---------ZM single----------");
+
+    string dataset_name = exp_recorder.get_dataset_name();
+    print("dataset_name:" + dataset_name);
+    FileWriter file_writer;
+    zm::init(dataset_name, exp_recorder);
+
+    map<string, vector<Mbr>> mbrs_map;
+    get_mbrs(mbrs_map, exp_recorder, zm::dataset.points);
+
+    zm::stages.push_back(1);
+    // zm::stages.push_back(zm::dataset.points.size() / Constants::THRESHOLD);
+
+    zm::build_ZM(exp_recorder);
+    exp_recorder.time /= 1e9;
+    print("build time:" + to_string(exp_recorder.time) + " s");
+    print(exp_recorder.get_build_result());
+    file_writer.write_build(exp_recorder);
+
+    Query<Point> query;
+    long N = zm::dataset.points.size();
+    if (exp_recorder.test_point)
+    {
+        query.set_point_query()->query_points = zm::dataset.points;
+        zm::query(query, exp_recorder);
+        exp_recorder.time /= N;
+        cout << "point query time:" << exp_recorder.time << endl;
+        file_writer.write_point_query(exp_recorder);
+    }
 }
 
 void test_ZM(ExpRecorder &exp_recorder)
@@ -189,6 +218,31 @@ void test_ZM(ExpRecorder &exp_recorder)
 
 void test_ML_single(ExpRecorder &exp_recorder)
 {
+    print("---------ML single----------");
+
+    map<string, vector<Mbr>> mbrs_map;
+    string dataset_name = exp_recorder.get_dataset_name();
+    print("dataset_name:" + dataset_name);
+    FileWriter file_writer;
+    ml::init(dataset_name, exp_recorder);
+    get_mbrs(mbrs_map, exp_recorder, ml::dataset.points);
+    ml::stages.push_back(1);
+    ml::build_ML(exp_recorder);
+    exp_recorder.time /= 1e9;
+    print("build time:" + to_string(exp_recorder.time) + " s");
+    print(exp_recorder.get_build_result());
+
+    file_writer.write_build(exp_recorder);
+
+    Query<Point> query;
+    if (exp_recorder.test_point)
+    {
+        query.set_point_query()->query_points = ml::dataset.points;
+        ml::query(query, exp_recorder);
+        exp_recorder.time /= ml::N;
+        print("point query time:" + to_string(exp_recorder.time) + " ns");
+        file_writer.write_point_query(exp_recorder);
+    }
 }
 
 void test_ML(ExpRecorder &exp_recorder)
@@ -201,7 +255,8 @@ void test_ML(ExpRecorder &exp_recorder)
     FileWriter file_writer;
     ml::init(dataset_name, exp_recorder);
     get_mbrs(mbrs_map, exp_recorder, ml::dataset.points);
-
+    ml::stages.push_back(1);
+    ml::stages.push_back(ml::dataset.points.size() / Constants::THRESHOLD);
     ml::build_ML(exp_recorder);
     exp_recorder.time /= 1e9;
     print("build time:" + to_string(exp_recorder.time) + " s");
@@ -492,13 +547,14 @@ void parse(int argc, char **argv, ExpRecorder &exp_recorder)
             {"single build", no_argument, NULL, 'b'},
             {"single build parameter", no_argument, NULL, 'p'},
             {"query method(s)", no_argument, NULL, 'q'},
+            {"random build", no_argument, NULL, 'm'},
+            {"build model index", no_argument, NULL, 'i'},
         };
 
     while (1)
     {
         int opt_index = 0;
-        c = getopt_long(argc, argv, "c:d:s:l:n:fu:rob:p:q:", long_options, &opt_index);
-
+        c = getopt_long(argc, argv, "c:d:s:l:n:fu:rob:p:q:mi:", long_options, &opt_index);
         if (-1 == c)
         {
             break;
@@ -544,6 +600,7 @@ void parse(int argc, char **argv, ExpRecorder &exp_recorder)
             config::set_method_value(exp_recorder.build_method, atof(optarg));
             break;
         case 'q':
+        {
             int num = atoi(optarg);
             exp_recorder.test_point = num & 1;
             exp_recorder.test_window = num & 2;
@@ -552,6 +609,21 @@ void parse(int argc, char **argv, ExpRecorder &exp_recorder)
             // std::cout << "exp_recorder.test_window: " << exp_recorder.test_window << std::endl;
             // std::cout << "exp_recorder.test_knn: " << exp_recorder.test_knn << std::endl;
             break;
+        }
+        case 'm':
+            exp_recorder.is_random_build = true;
+            break;
+        case 'i':
+        {
+            int build_model_cardinality_bound = atoi(optarg);
+            if (build_model_cardinality_bound != 8)
+            {
+                config::build_time_model_training_cardinality_bound = build_model_cardinality_bound;
+                config::build_time_model_path = "./data/build_time_model_zm_" + to_string(build_model_cardinality_bound) + "u.pt";
+                config::query_time_model_path = "./data/query_time_model_zm_" + to_string(build_model_cardinality_bound) + "u.pt";
+            }
+            break;
+        }
         }
     }
 }

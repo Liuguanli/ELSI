@@ -13,6 +13,8 @@ datasets/*
 *.png
 *.txtExample_ZM.o
 data/*.csv
+data/*.pt
+data/*.ipynb
 Example.o
 Example
 

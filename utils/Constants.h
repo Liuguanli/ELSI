@@ -118,6 +118,8 @@ public:
     static const string BUILD_TIME_MODEL_PATH;
     static const string QUERY_TIME_MODEL_PATH;
     static const string RAW_DATA_PATH;
+    static const string SCORER_FORMATTED;
+
 
     static const string REBUILD_RAW_DATA_PATH;
     static const string REBUILD_DATA_PATH;

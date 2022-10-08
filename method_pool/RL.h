@@ -34,7 +34,7 @@ public:
 
         // cout << dataset.keys[0] << " " << dataset.keys[dataset.keys.size() - 1] << endl;
         // cout << "dataset.keys.size():" << dataset.keys.size() << endl;
-        DataSetInfo<T> info(dataset.keys.size() / 100, dataset.keys);
+        DataSetInfo<T> info(dataset.keys.size() / 10, dataset.keys);
         // cout << "info.cdf.size():" << info.cdf.size() << endl;
 
         // DataSetInfo<T> info(dataset.keys.size() / 10, dataset.normalized_keys);
