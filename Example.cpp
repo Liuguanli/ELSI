@@ -120,39 +120,6 @@ void get_mbrs(map<string, vector<Mbr>> &mbrs_map, ExpRecorder &exp_recorder, vec
     }
 }
 
-void test_ZM_single(ExpRecorder &exp_recorder)
-{
-    print("---------ZM single----------");
-
-    string dataset_name = exp_recorder.get_dataset_name();
-    print("dataset_name:" + dataset_name);
-    FileWriter file_writer;
-    zm::init(dataset_name, exp_recorder);
-
-    map<string, vector<Mbr>> mbrs_map;
-    get_mbrs(mbrs_map, exp_recorder, zm::dataset.points);
-
-    zm::stages.push_back(1);
-    // zm::stages.push_back(zm::dataset.points.size() / Constants::THRESHOLD);
-
-    zm::build_ZM(exp_recorder);
-    exp_recorder.time /= 1e9;
-    print("build time:" + to_string(exp_recorder.time) + " s");
-    print(exp_recorder.get_build_result());
-    file_writer.write_build(exp_recorder);
-
-    Query<Point> query;
-    long N = zm::dataset.points.size();
-    if (exp_recorder.test_point)
-    {
-        query.set_point_query()->query_points = zm::dataset.points;
-        zm::query(query, exp_recorder);
-        exp_recorder.time /= N;
-        cout << "point query time:" << exp_recorder.time << endl;
-        file_writer.write_point_query(exp_recorder);
-    }
-}
-
 void test_ZM(ExpRecorder &exp_recorder)
 {
     print("---------ZM----------");
@@ -179,10 +146,15 @@ void test_ZM(ExpRecorder &exp_recorder)
     if (exp_recorder.test_point)
     {
         query.set_point_query()->query_points = zm::dataset.points;
-        zm::query(query, exp_recorder);
-        exp_recorder.time /= N;
-        cout << "point query time:" << exp_recorder.time << endl;
-        file_writer.write_point_query(exp_recorder);
+
+        for (size_t j = 0; j < 10; j++)
+        {
+            zm::query(query, exp_recorder);
+            exp_recorder.time /= N;
+            cout << "point query time:" << exp_recorder.time << endl;
+            file_writer.write_point_query(exp_recorder);
+            query.shuffle();
+        }
     }
 
     if (exp_recorder.test_window)
@@ -192,10 +164,15 @@ void test_ZM(ExpRecorder &exp_recorder)
             vector<Mbr> mbrs = mbrs_map[to_string(areas[i]) + to_string(ratios[2])];
             query.set_window_query()->query_windows = mbrs;
             // ->set_query_windows(mbrs);
-            zm::query(query, exp_recorder);
-            exp_recorder.time /= query_num;
-            print("window query time:" + to_string(exp_recorder.time) + " ns");
-            file_writer.write_window_query(exp_recorder);
+
+            for (size_t j = 0; j < 10; j++)
+            {
+                zm::query(query, exp_recorder);
+                exp_recorder.time /= query_num;
+                print("window query time:" + to_string(exp_recorder.time) + " ns");
+                file_writer.write_window_query(exp_recorder);
+                query.shuffle();
+            }
         }
     }
 
@@ -209,39 +186,15 @@ void test_ZM(ExpRecorder &exp_recorder)
         }
         query.set_knn_query()->set_k(25)->knn_query_points = knn_query_points;
         // set_knn_query_points(knn_query_points)->
-        zm::query(query, exp_recorder);
-        exp_recorder.time /= query_num;
-        print("knn query time:" + to_string(exp_recorder.time) + " ns");
-        file_writer.write_kNN_query(exp_recorder);
-    }
-}
 
-void test_ML_single(ExpRecorder &exp_recorder)
-{
-    print("---------ML single----------");
-
-    map<string, vector<Mbr>> mbrs_map;
-    string dataset_name = exp_recorder.get_dataset_name();
-    print("dataset_name:" + dataset_name);
-    FileWriter file_writer;
-    ml::init(dataset_name, exp_recorder);
-    get_mbrs(mbrs_map, exp_recorder, ml::dataset.points);
-    ml::stages.push_back(1);
-    ml::build_ML(exp_recorder);
-    exp_recorder.time /= 1e9;
-    print("build time:" + to_string(exp_recorder.time) + " s");
-    print(exp_recorder.get_build_result());
-
-    file_writer.write_build(exp_recorder);
-
-    Query<Point> query;
-    if (exp_recorder.test_point)
-    {
-        query.set_point_query()->query_points = ml::dataset.points;
-        ml::query(query, exp_recorder);
-        exp_recorder.time /= ml::N;
-        print("point query time:" + to_string(exp_recorder.time) + " ns");
-        file_writer.write_point_query(exp_recorder);
+        for (size_t j = 0; j < 10; j++)
+        {
+            zm::query(query, exp_recorder);
+            exp_recorder.time /= query_num;
+            print("knn query time:" + to_string(exp_recorder.time) + " ns");
+            file_writer.write_kNN_query(exp_recorder);
+            query.shuffle();
+        }
     }
 }
 
@@ -268,10 +221,15 @@ void test_ML(ExpRecorder &exp_recorder)
     if (exp_recorder.test_point)
     {
         query.set_point_query()->query_points = ml::dataset.points;
-        ml::query(query, exp_recorder);
-        exp_recorder.time /= ml::N;
-        print("point query time:" + to_string(exp_recorder.time) + " ns");
-        file_writer.write_point_query(exp_recorder);
+
+        for (size_t j = 0; j < 10; j++)
+        {
+            ml::query(query, exp_recorder);
+            exp_recorder.time /= ml::N;
+            print("point query time:" + to_string(exp_recorder.time) + " ns");
+            file_writer.write_point_query(exp_recorder);
+            query.shuffle();
+        }
     }
 
     if (exp_recorder.test_window)
@@ -280,10 +238,15 @@ void test_ML(ExpRecorder &exp_recorder)
         {
             vector<Mbr> mbrs = mbrs_map[to_string(areas[i]) + to_string(ratios[2])];
             query.set_window_query()->query_windows = mbrs;
-            ml::query(query, exp_recorder);
-            exp_recorder.time /= query_num;
-            print("window query time:" + to_string(exp_recorder.time) + " ns");
-            file_writer.write_window_query(exp_recorder);
+
+            for (size_t j = 0; j < 10; j++)
+            {
+                ml::query(query, exp_recorder);
+                exp_recorder.time /= query_num;
+                print("window query time:" + to_string(exp_recorder.time) + " ns");
+                file_writer.write_window_query(exp_recorder);
+                query.shuffle();
+            }
         }
     }
 
@@ -296,60 +259,15 @@ void test_ML(ExpRecorder &exp_recorder)
             knn_query_points.push_back(ml::dataset.points[index]);
         }
         query.set_knn_query()->set_k(25)->knn_query_points = knn_query_points;
-        ml::query(query, exp_recorder);
-        exp_recorder.time /= query_num;
-        print("knn query time:" + to_string(exp_recorder.time) + " ns");
-        file_writer.write_kNN_query(exp_recorder);
-    }
-}
 
-void test_RSMI_single(ExpRecorder &exp_recorder)
-{
-    map<string, vector<Mbr>> mbrs_map;
-    string dataset_name = exp_recorder.get_dataset_name();
-    print("dataset_name:" + dataset_name);
-    FileWriter file_writer;
-
-    int length = sizeof(methods) / sizeof(methods[0]);
-    for (size_t i = 0; i < length; i++)
-    {
-        exp_recorder.build_method = methods[i];
-        rsmi::init(dataset_name, exp_recorder);
-        get_mbrs(mbrs_map, exp_recorder, rsmi::dataset.points);
-        rsmi::root = rsmi::build_single_RSMI(exp_recorder, rsmi::dataset);
-        exp_recorder.timer_end();
-        print("build time:" + to_string(exp_recorder.time_to_second()) + " s");
-        file_writer.write_build(exp_recorder);
-
-        Query<Point> query;
-        query.set_point_query()->query_points = rsmi::dataset.points;
-        rsmi::query(query, exp_recorder);
-        exp_recorder.time /= rsmi::N;
-        print("query time:" + to_string(exp_recorder.time) + " ns");
-        file_writer.write_point_query(exp_recorder);
-
-        for (int i = 0; i < 5; i++)
+        for (size_t j = 0; j < 10; j++)
         {
-            vector<Mbr> mbrs = mbrs_map[to_string(areas[i]) + to_string(ratios[2])];
-
-            query.set_window_query()->query_windows = mbrs;
-            rsmi::query(query, exp_recorder);
+            ml::query(query, exp_recorder);
             exp_recorder.time /= query_num;
-            print("window query time:" + to_string(exp_recorder.time) + " ns");
-            file_writer.write_window_query(exp_recorder);
+            print("knn query time:" + to_string(exp_recorder.time) + " ns");
+            file_writer.write_kNN_query(exp_recorder);
+            query.shuffle();
         }
-
-        vector<Point> knn_query_points;
-        for (int i = 0; i < query_num; i++)
-        {
-            int index = rand() % rsmi::dataset.points.size();
-            knn_query_points.push_back(rsmi::dataset.points[index]);
-        }
-        query.set_knn_query()->set_k(25)->knn_query_points = knn_query_points;
-        rsmi::query(query, exp_recorder);
-        exp_recorder.time /= query_num;
-        print("knn query time:" + to_string(exp_recorder.time) + " ns");
-        file_writer.write_kNN_query(exp_recorder);
     }
 }
 
@@ -376,10 +294,15 @@ void test_RSMI(ExpRecorder &exp_recorder)
     if (exp_recorder.test_point)
     {
         query.set_point_query()->query_points = rsmi::dataset.points;
-        rsmi::query(query, exp_recorder);
-        exp_recorder.time /= rsmi::N;
-        cout << "point query time:" << exp_recorder.time << endl;
-        file_writer.write_point_query(exp_recorder);
+
+        for (size_t j = 0; j < 10; j++)
+        {
+            rsmi::query(query, exp_recorder);
+            exp_recorder.time /= rsmi::N;
+            cout << "point query time:" << exp_recorder.time << endl;
+            file_writer.write_point_query(exp_recorder);
+            query.shuffle();
+        }
     }
 
     if (exp_recorder.test_window)
@@ -388,10 +311,15 @@ void test_RSMI(ExpRecorder &exp_recorder)
         {
             vector<Mbr> mbrs = mbrs_map[to_string(areas[i]) + to_string(ratios[2])];
             query.set_window_query()->query_windows = mbrs;
-            rsmi::query(query, exp_recorder);
-            exp_recorder.time /= query_num;
-            print("window query time:" + to_string(exp_recorder.time) + " ns");
-            file_writer.write_window_query(exp_recorder);
+
+            for (size_t j = 0; j < 10; j++)
+            {
+                rsmi::query(query, exp_recorder);
+                exp_recorder.time /= query_num;
+                print("window query time:" + to_string(exp_recorder.time) + " ns");
+                file_writer.write_window_query(exp_recorder);
+                query.shuffle();
+            }
         }
     }
 
@@ -404,15 +332,15 @@ void test_RSMI(ExpRecorder &exp_recorder)
             knn_query_points.push_back(rsmi::dataset.points[index]);
         }
         query.set_knn_query()->set_k(25)->knn_query_points = knn_query_points;
-        rsmi::query(query, exp_recorder);
-        exp_recorder.time /= query_num;
-        print("knn query time:" + to_string(exp_recorder.time) + " ns");
-        file_writer.write_kNN_query(exp_recorder);
+        for (size_t j = 0; j < 10; j++)
+        {
+            rsmi::query(query, exp_recorder);
+            exp_recorder.time /= query_num;
+            print("knn query time:" + to_string(exp_recorder.time) + " ns");
+            file_writer.write_kNN_query(exp_recorder);
+            query.shuffle();
+        }
     }
-}
-
-void test_LISA_single(ExpRecorder &exp_recorder)
-{
 }
 
 void test_LISA(ExpRecorder &exp_recorder)
@@ -437,10 +365,14 @@ void test_LISA(ExpRecorder &exp_recorder)
     if (exp_recorder.test_point)
     {
         query.set_point_query()->query_points = lisa::dataset.points;
-        lisa::query(query, exp_recorder);
-        exp_recorder.time /= lisa::N;
-        cout << "point query time:" << exp_recorder.time << endl;
-        file_writer.write_point_query(exp_recorder);
+        for (size_t i = 0; i < 10; i++)
+        {
+            lisa::query(query, exp_recorder);
+            exp_recorder.time /= lisa::N;
+            cout << "point query time:" << exp_recorder.time << endl;
+            file_writer.write_point_query(exp_recorder);
+            query.shuffle();
+        }
     }
 
     if (exp_recorder.test_window)
@@ -449,10 +381,13 @@ void test_LISA(ExpRecorder &exp_recorder)
         {
             vector<Mbr> mbrs = mbrs_map[to_string(areas[i]) + to_string(ratios[2])];
             query.set_window_query()->query_windows = mbrs;
-            lisa::query(query, exp_recorder);
-            exp_recorder.time /= query_num;
-            print("window query time:" + to_string(exp_recorder.time) + " ns");
-            file_writer.write_window_query(exp_recorder);
+            for (size_t j = 0; j < 10; j++)
+            {
+                lisa::query(query, exp_recorder);
+                exp_recorder.time /= query_num;
+                file_writer.write_window_query(exp_recorder);
+                query.shuffle();
+            }
         }
     }
 
@@ -465,68 +400,14 @@ void test_LISA(ExpRecorder &exp_recorder)
             knn_query_points.push_back(lisa::dataset.points[index]);
         }
         query.set_knn_query()->set_k(25)->knn_query_points = knn_query_points;
-        lisa::query(query, exp_recorder);
-        exp_recorder.time /= query_num;
-        print("knn query time:" + to_string(exp_recorder.time) + " ns");
-        file_writer.write_kNN_query(exp_recorder);
-    }
-}
 
-void test_Flood(ExpRecorder &exp_recorder)
-{
-    print("---------Flood----------");
-
-    string dataset_name = exp_recorder.get_dataset_name();
-    print("dataset_name:" + dataset_name);
-    FileWriter file_writer;
-
-    // exp_recorder.build_method = Constants::MR;
-    flood::init(dataset_name, exp_recorder);
-
-    flood::build_Flood(exp_recorder);
-    exp_recorder.timer_end();
-    exp_recorder.time /= 1e9;
-    print("build time:" + to_string(exp_recorder.time) + " s");
-    print(exp_recorder.get_build_result());
-
-    Query<Point> query;
-    if (exp_recorder.test_point)
-    {
-        query.set_point_query()->query_points = rsmi::dataset.points;
-        rsmi::query(query, exp_recorder);
-        exp_recorder.time /= rsmi::N;
-        cout << "point query time:" << exp_recorder.time << endl;
-        file_writer.write_point_query(exp_recorder);
-    }
-
-    if (exp_recorder.test_window)
-    {
-        map<string, vector<Mbr>> mbrs_map;
-        get_mbrs(mbrs_map, exp_recorder, rsmi::dataset.points);
-        for (int i = 0; i < 5; i++)
+        for (size_t j = 0; j < 10; j++)
         {
-            vector<Mbr> mbrs = mbrs_map[to_string(areas[i]) + to_string(ratios[2])];
-            query.set_window_query()->query_windows = mbrs;
-            rsmi::query(query, exp_recorder);
+            lisa::query(query, exp_recorder);
             exp_recorder.time /= query_num;
-            print("window query time:" + to_string(exp_recorder.time) + " ns");
-            file_writer.write_window_query(exp_recorder);
+            file_writer.write_kNN_query(exp_recorder);
+            query.shuffle();
         }
-    }
-
-    if (exp_recorder.test_knn)
-    {
-        vector<Point> knn_query_points;
-        for (int i = 0; i < query_num; i++)
-        {
-            int index = rand() % rsmi::dataset.points.size();
-            knn_query_points.push_back(rsmi::dataset.points[index]);
-        }
-        query.set_knn_query()->set_k(25)->knn_query_points = knn_query_points;
-        rsmi::query(query, exp_recorder);
-        exp_recorder.time /= query_num;
-        print("knn query time:" + to_string(exp_recorder.time) + " ns");
-        file_writer.write_kNN_query(exp_recorder);
     }
 }
 
@@ -653,25 +534,6 @@ int main(int argc, char **argv)
         break;
     case 4:
         test_RSMI(exp_recorder);
-        break;
-    case 5:
-        print("test");
-        // test_RSMI_single(exp_recorder);
-        break;
-    case 6:
-        test_ML_single(exp_recorder);
-        break;
-    case 7:
-        test_ZM_single(exp_recorder);
-        break;
-    case 8:
-        test_RSMI_single(exp_recorder);
-        break;
-    case 9:
-        test_LISA_single(exp_recorder);
-        break;
-    case 10:
-        test_Flood(exp_recorder);
         break;
     default:
         break;

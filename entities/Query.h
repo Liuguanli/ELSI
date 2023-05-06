@@ -1,12 +1,15 @@
 #ifndef QUERY_H
 #define QUERY_H
+#include <iostream>
+#include <random>
 #include <vector>
 #include <string>
 #include "../utils/Constants.h"
 #include "../entities/Mbr.h"
 
 using namespace std;
-
+std::random_device rd;
+std::mt19937 rg(rd());
 template <typename D>
 class Query
 {
@@ -33,6 +36,22 @@ public:
     // vector<D> get_knn_query_points() { return knn_query_points; }
     // vector<Mbr> get_query_windows() { return query_windows; }
 
+    void shuffle()
+    {
+        if (is_point())
+        {
+            std::shuffle(query_points.begin(), query_points.end(), rg);
+        }
+        else if (is_window())
+        {
+            std::shuffle(query_windows.begin(), query_windows.end(), rg);
+        }
+        else if (is_knn())
+        {
+            std::shuffle(knn_query_points.begin(), knn_query_points.end(), rg);
+        }
+    }
+
     Query *set_point_query()
     {
         type = Constants::QUERY_TYPE_POINT;
@@ -48,7 +67,7 @@ public:
     Query *set_knn_query()
     {
         type = Constants::QUERY_TYPE_KNN;
-        return this;                                                                                    
+        return this;
     }
 
     Query *set_k(int k)

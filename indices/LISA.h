@@ -623,7 +623,8 @@ namespace lisa
 
     void query(Query<Point> query, ExpRecorder &exp_recorder)
     {
-        exp_recorder.timer_begin();
+
+        exp_recorder.timer_begin();        
         framework.query(query);
         exp_recorder.timer_end();
         // if (query.is_window())
